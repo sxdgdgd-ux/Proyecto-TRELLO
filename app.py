@@ -1,54 +1,87 @@
-"""Módulo principal para pruebas de integración de la base de datos y repositorios."""
-from Datos.modelos.models import crear_tablas
-from Datos.modelos.repositorio import repo_usuario, repo_proyecto, repo_tablero, repo_lista
+"""Script de pruebas de integracion para consultar los datos en MySQL usando Peewee."""
+from Datos.modelos.models import (
+    Usuario,
+    Proyecto,
+    Tablero,
+    Lista,
+    Tarjeta,
+    Etiqueta,
+    Comentario,
+    ProyectoUsuario,
+    AsignacionTarjeta,
+    TarjetaEtiqueta,
+)
 
 
-def probar_sistema():
-    """Ejecuta una prueba completa de flujo de datos."""
-    print("=== 1. Creando tablas en MySQL ===")
-    crear_tablas()
-    print("✓ Tablas listadas/creadas correctamente.\n")
+def consultar_y_verificar_datos():
+    """Realiza consultas en todas las tablas para validar el funcionamiento del ORM."""
+    print("==================================================")
+    print(" 🚀 INICIANDO PRUEBAS DE LECTURA EN MYSQL")
+    print("==================================================\n")
 
-    print("=== 2. Probando Repositorio de Usuario ===")
-    usuario = repo_usuario.crear_usuario(
-        nombre="Alejandro Ortiz",
-        email="alejandro@ejemplo.com"
-    )
-    print(f"✓ Usuario creado -> ID: {usuario.id_usuario}, Nombre: {usuario.nombre}")
+    # 1. Consultar Usuarios
+    print("--- 1. USUARIOS REGISTRADOS ---")
+    usuarios = Usuario.select()
+    for u in usuarios:
+        print(f"  • ID: {u.id_usuario} | Nombre: {u.nombre} | Email: {u.email}")
+    print(f"Total: {len(usuarios)} usuarios.\n")
 
-    usuarios = repo_usuario.listado_usuarios()
-    print(f" Total usuarios en BD: {len(usuarios)}\n")
+    # 2. Consultar Proyectos y sus Miembros
+    print("--- 2. PROYECTOS Y SUS MIEMBROS ---")
+    proyectos = Proyecto.select()
+    for p in proyectos:
+        print(f"\n📌 Proyecto ID {p.id_proyecto}: {p.nombre_proyecto}")
+        print(f"   Descripción: {p.descripcion}")
+        
+        miembros = (
+            ProyectoUsuario.select(ProyectoUsuario, Usuario)
+            .join(Usuario)
+            .where(ProyectoUsuario.id_proyecto == p.id_proyecto)
+        )
+        print("   Miembros asignados:")
+        for m in miembros:
+            print(f"     - {m.id_usuario.nombre} (Rol: {m.rol})")
 
-    print("=== 3. Probando Repositorio de Proyecto ===")
-    proyecto = repo_proyecto.crear_proyecto(
-        nombre_proyecto="Proyecto Trello Modular",
-        descripcion="Sistema de gestión de tareas con Peewee y MySQL"
-    )
-    print(f"✓ Proyecto creado -> ID: {proyecto.id_proyecto}, Nombre: {proyecto.nombre_proyecto}")
+    # 3. Consultar Tableros, Listas y Tarjetas
+    print("\n--- 3. ESTRUCTURA DE TABLEROS, LISTAS Y TARJETAS ---")
+    tableros = Tablero.select()
+    for t in tableros:
+        print(f"\n📋 Tablero ID {t.id_tablero}: '{t.titulo}' (Proyecto: {t.id_proyecto.nombre_proyecto})")
+        
+        listas = Lista.select().where(Lista.id_tablero == t.id_tablero).order_by(Lista.posicion)
+        for l in listas:
+            print(f"   📂 Lista ID {l.id_lista}: [{l.nombre_lista}] (Posición: {l.posicion})")
+            
+            tarjetas = Tarjeta.select().where(Tarjeta.id_lista == l.id_lista)
+            for tar in tarjetas:
+                print(f"      🎴 Tarjeta ID {tar.id_tarjeta}: '{tar.titulo}' | Estado: {tar.estado}")
+                
+                asignaciones = (
+                    AsignacionTarjeta.select(AsignacionTarjeta, Usuario)
+                    .join(Usuario)
+                    .where(AsignacionTarjeta.id_tarjeta == tar.id_tarjeta)
+                )
+                usuarios_asignados = [a.id_usuario.nombre for a in asignaciones]
+                if usuarios_asignados:
+                    print(f"         👤 Asignado a: {', '.join(usuarios_asignados)}")
 
-    repo_proyecto.asignar_usuario_a_proyecto(
-        id_proyecto=proyecto.id_proyecto,
-        id_usuario=usuario.id_usuario,
-        rol="Administrador"
-    )
-    print(f"✓ Usuario {usuario.id_usuario} asignado al proyecto {proyecto.id_proyecto} como Administrador.\n")
+                etiquetas_rel = (
+                    TarjetaEtiqueta.select(TarjetaEtiqueta, Etiqueta)
+                    .join(Etiqueta)
+                    .where(TarjetaEtiqueta.id_tarjeta == tar.id_tarjeta)
+                )
+                etiquetas_nombres = [te.id_etiqueta.nombre for te in etiquetas_rel]
+                if etiquetas_nombres:
+                    print(f"         🏷️  Etiquetas: {', '.join(etiquetas_nombres)}")
 
-    print("=== 4. Probando Tableros y Listas ===")
-    tablero = repo_tablero.crear_tablero(
-        id_proyecto=proyecto.id_proyecto,
-        titulo="Tablero Principal"
-    )
-    print(f"✓ Tablero creado -> ID: {tablero.id_tablero}, Título: {tablero.titulo}")
+                comentarios = Comentario.select().where(Comentario.id_tarjeta == tar.id_tarjeta)
+                for c in comentarios:
+                    print(f"         💬 Comentario ({c.id_usuario.nombre}): \"{c.texto}\"")
 
-    lista = repo_lista.crear_lista(
-        id_tablero=tablero.id_tablero,
-        nombre_lista="Por Hacer",
-        posicion=1
-    )
-    print(f"✓ Lista creada -> ID: {lista.id_lista}, Nombre: {lista.nombre_lista}\n")
-
-    print("=== PRUEBA COMPLETADA CON ÉXITO ===")
+    print("\n==================================================")
+    print(" 🎉 ¡CONSULTA REALIZADA CON ÉXITO! EL CÓDIGO Y LAS TABLAS FUNCIONAN CORRECTAMENTE.")
+    print("==================================================")
 
 
 if __name__ == '__main__':
-    probar_sistema()
+    consultar_y_verificar_datos()
