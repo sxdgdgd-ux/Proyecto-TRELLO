@@ -1,29 +1,20 @@
-from datos.modelos.entidades.entidad_Tarjeta import Tarjeta, AsignacionTarjeta
+"""Módulo de repositorio para la gestión de Etiquetas."""
+from Datos.modelos.models import Etiqueta, TarjetaEtiqueta
 
-def crear_tarjeta(id_lista, titulo, descripcion=None, fecha_limite=None, estado=None):
-    return Tarjeta.create(
-        id_lista=id_lista,
-        titulo=titulo,
-        descripcion=descripcion,
-        fecha_limite=fecha_limite,
-        estado=estado
-    )
 
-def listado_tarjetas_por_lista(id_lista):
-    tarjetas = Tarjeta.select().where(Tarjeta.id_lista == id_lista)
-    if not tarjetas:
-        print("No hay tarjetas en esta lista.")
-    return tarjetas
+def crear_etiqueta(nombre, color):
+    """Crea una etiqueta nueva."""
+    return Etiqueta.create(nombre=nombre, color=color)
 
-def obtener_tarjeta_por_id(id_tarjeta):
-    return Tarjeta.get_or_none(Tarjeta.id_tarjeta == id_tarjeta)
 
-def asignar_usuario_a_tarjeta(id_tarjeta, id_usuario):
-    return AsignacionTarjeta.create(id_tarjeta=id_tarjeta, id_usuario=id_usuario)
+def listado_etiquetas():
+    """Obtiene el listado de todas las etiquetas."""
+    etiquetas = Etiqueta.select()
+    if not etiquetas:
+        print("No hay etiquetas registradas.")
+    return etiquetas
 
-def eliminar_tarjeta(id_tarjeta):
-    tarjeta = obtener_tarjeta_por_id(id_tarjeta)
-    if tarjeta:
-        tarjeta.delete_instance()
-        return True
-    return False
+
+def asignar_etiqueta_a_tarjeta(id_tarjeta, id_etiqueta):
+    """Asigna una etiqueta a una tarjeta específica."""
+    return TarjetaEtiqueta.create(id_tarjeta=id_tarjeta, id_etiqueta=id_etiqueta)

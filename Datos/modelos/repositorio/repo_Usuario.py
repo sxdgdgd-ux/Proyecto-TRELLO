@@ -2,7 +2,7 @@
 from Datos.modelos.models import Usuario
 
 
-def crear_usuario(nombre, email, contrasena=None):
+def crear_usuario(nombre, email):
     """Crea un nuevo usuario en la base de datos."""
     return Usuario.create(nombre=nombre, email=email)
 
