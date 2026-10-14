@@ -1,10 +1,10 @@
-from datos.modelos.entidades.entidad_Etiqueta import Etiqueta, TarjetaEtiqueta
+from Datos.modelos.etiqueta import Etiqueta, TarjetaEtiqueta
 
 def crear_etiqueta(nombre, color):
-    return Etiqueta.create(nombre=nombre, color=color)
+    return Etiqueta.create(nombre=nombre, color=color)  # pylint: disable=no-member
 
 def listado_etiquetas():
-    etiquetas = Etiqueta.select()
+    etiquetas = Etiqueta.select()  # pylint: disable=no-member
     if not etiquetas:
         print("No hay etiquetas registradas.")
     return etiquetas
