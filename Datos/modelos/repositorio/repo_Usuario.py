@@ -3,9 +3,12 @@ from Datos.modelos.models import Usuario
 
 
 def crear_usuario(nombre, email):
-    """Crea un nuevo usuario en la base de datos."""
-    return Usuario.create(nombre=nombre, email=email)
-
+    """Crea un nuevo usuario o recupera el existente si el correo ya esta registrado."""
+    usuario, creado = Usuario.get_or_create(
+        email=email,
+        defaults={'nombre': nombre}
+    )
+    return usuario
 
 def listado_usuarios():
     """Obtiene el listado de todos los usuarios registrados."""
