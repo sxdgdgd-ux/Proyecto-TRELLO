@@ -1,127 +1,32 @@
-from peewee import (
-    MySQLDatabase, Model, TextField, DateField, AutoField, CharField,
-    ForeignKeyField, IntegerField, DateTimeField, CompositeKey, SQL
+"""Compatibilidad para importar los modelos desde el modulo principal."""
+from Datos.modelos.models import (
+    AsignacionTarjeta,
+    BaseModel,
+    Comentario,
+    Etiqueta,
+    Lista,
+    Proyecto,
+    ProyectoUsuario,
+    Tablero,
+    Tarjeta,
+    TarjetaEtiqueta,
+    Usuario,
+    crear_tablas,
+    database,
 )
-from decouple import config
 
-database = MySQLDatabase(
-    config('db'),
-    **{
-        'charset': 'utf8mb4',
-        'host': config('host'),
-        'port': config('port', cast=int),
-        'user': config('user'),
-        'password': config('password'),
-    }
-)
-
-class BaseModel(Model):
-    class Meta:
-        database = database
-
-class Proyecto(BaseModel):
-    descripcion = TextField(null=True)
-    fecha_creacion = DateField(constraints=[SQL("DEFAULT curdate()")])
-    id_proyecto = AutoField()
-    nombre_proyecto = CharField(max_length=100)
-
-    class Meta:
-        table_name = 'proyecto'
-
-class Tablero(BaseModel):
-    id_proyecto = ForeignKeyField(column_name='id_proyecto', field='id_proyecto', model=Proyecto, on_delete='CASCADE')
-    id_tablero = AutoField()
-    titulo = CharField(max_length=100)
-
-    class Meta:
-        table_name = 'tablero'
-
-class Lista(BaseModel):
-    id_lista = AutoField()
-    id_tablero = ForeignKeyField(column_name='id_tablero', field='id_tablero', model=Tablero, on_delete='CASCADE')
-    nombre_lista = CharField(max_length=100)
-    posicion = IntegerField()
-
-    class Meta:
-        table_name = 'lista'
-
-class Tarjeta(BaseModel):
-    descripcion = TextField(null=True)
-    estado = CharField(max_length=50, null=True)
-    fecha_limite = DateField(null=True)
-    id_lista = ForeignKeyField(column_name='id_lista', field='id_lista', model=Lista, on_delete='CASCADE')
-    id_tarjeta = AutoField()
-    titulo = CharField(max_length=150)
-
-    class Meta:
-        table_name = 'tarjeta'
-
-class Usuario(BaseModel):
-    email = CharField(max_length=150, unique=True)
-    id_usuario = AutoField()
-    nombre = CharField(max_length=100)
-
-    class Meta:
-        table_name = 'usuario'
-
-class AsignacionTarjeta(BaseModel):
-    id_tarjeta = ForeignKeyField(column_name='id_tarjeta', field='id_tarjeta', model=Tarjeta, on_delete='CASCADE')
-    id_usuario = ForeignKeyField(column_name='id_usuario', field='id_usuario', model=Usuario, on_delete='CASCADE')
-
-    class Meta:
-        table_name = 'asignacion_tarjeta'
-        indexes = (
-            (('id_tarjeta', 'id_usuario'), True),
-        )
-        primary_key = CompositeKey('id_tarjeta', 'id_usuario')
-
-class Comentario(BaseModel):
-    fecha_creacion = DateTimeField(constraints=[SQL("DEFAULT current_timestamp()")])
-    id_comentario = AutoField()
-    id_tarjeta = ForeignKeyField(column_name='id_tarjeta', field='id_tarjeta', model=Tarjeta, on_delete='CASCADE')
-    id_usuario = ForeignKeyField(column_name='id_usuario', field='id_usuario', model=Usuario, on_delete='CASCADE')
-    texto = TextField()
-
-    class Meta:
-        table_name = 'comentario'
-
-class Etiqueta(BaseModel):
-    color = CharField(max_length=20)
-    id_etiqueta = AutoField()
-    nombre = CharField(max_length=50)
-
-    class Meta:
-        table_name = 'etiqueta'
-
-class ProyectoUsuario(BaseModel):
-    id_proyecto = ForeignKeyField(column_name='id_proyecto', field='id_proyecto', model=Proyecto, on_delete='CASCADE')
-    id_usuario = ForeignKeyField(column_name='id_usuario', field='id_usuario', model=Usuario, on_delete='CASCADE')
-    rol = CharField(max_length=50)
-
-    class Meta:
-        table_name = 'proyecto_usuario'
-        indexes = (
-            (('id_proyecto', 'id_usuario'), True),
-        )
-        primary_key = CompositeKey('id_proyecto', 'id_usuario')
-
-class TarjetaEtiqueta(BaseModel):
-    id_etiqueta = ForeignKeyField(column_name='id_etiqueta', field='id_etiqueta', model=Etiqueta, on_delete='CASCADE')
-    id_tarjeta = ForeignKeyField(column_name='id_tarjeta', field='id_tarjeta', model=Tarjeta, on_delete='CASCADE')
-
-    class Meta:
-        table_name = 'tarjeta_etiqueta'
-        indexes = (
-            (('id_tarjeta', 'id_etiqueta'), True),
-        )
-        primary_key = CompositeKey('id_etiqueta', 'id_tarjeta')
-
-
-
-def crear_tablas():
-    with database:
-        database.create_tables([
-            Proyecto, Tablero, Lista, Tarjeta, Usuario,
-            AsignacionTarjeta, Comentario, Etiqueta,
-            ProyectoUsuario, TarjetaEtiqueta
-        ])
+__all__ = [
+    "AsignacionTarjeta",
+    "BaseModel",
+    "Comentario",
+    "Etiqueta",
+    "Lista",
+    "Proyecto",
+    "ProyectoUsuario",
+    "Tablero",
+    "Tarjeta",
+    "TarjetaEtiqueta",
+    "Usuario",
+    "crear_tablas",
+    "database",
+]

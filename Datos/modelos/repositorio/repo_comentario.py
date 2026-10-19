@@ -9,7 +9,11 @@ def crear_comentario(id_tarjeta, id_usuario, texto):
 
 def listado_comentarios_por_tarjeta(id_tarjeta):
     """Lista los comentarios de una tarjeta concreta."""
-    comentarios = Comentario.select().where(Comentario.id_tarjeta == id_tarjeta)
+    comentarios = (
+        Comentario.select()
+        .where(Comentario.id_tarjeta == id_tarjeta)
+        .order_by(Comentario.fecha_creacion, Comentario.id_comentario)
+    )
     if not comentarios:
         print("No hay comentarios en esta tarjeta.")
     return comentarios

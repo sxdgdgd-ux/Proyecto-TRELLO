@@ -1,15 +1,4 @@
-from peewee import MySQLDatabase, Model
+"""Compatibilidad para importar la conexion compartida de la aplicacion."""
+from Datos.modelos.models import BaseModel, database
 
-# Una única conexión compartida para todas las tablas
-database = MySQLDatabase(
-    'trello_db',
-    host='localhost',
-    port=8080,
-    user='Ale',
-    password='ale',
-    charset='utf8mb4'
-)
-
-class BaseModel(Model):
-    class Meta:
-        database = database
+__all__ = ["BaseModel", "database"]

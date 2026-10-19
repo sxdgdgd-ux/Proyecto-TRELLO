@@ -1,13 +1,20 @@
-from Datos.modelos.etiqueta import Etiqueta, TarjetaEtiqueta
+"""Módulo de repositorio para la gestión de Etiquetas."""
+from Datos.modelos.models import Etiqueta, TarjetaEtiqueta
+
 
 def crear_etiqueta(nombre, color):
-    return Etiqueta.create(nombre=nombre, color=color)  # pylint: disable=no-member
+    """Crea una etiqueta nueva."""
+    return Etiqueta.create(nombre=nombre, color=color)
+
 
 def listado_etiquetas():
-    etiquetas = Etiqueta.select()  # pylint: disable=no-member
+    """Obtiene el listado de todas las etiquetas."""
+    etiquetas = Etiqueta.select().order_by(Etiqueta.nombre)
     if not etiquetas:
         print("No hay etiquetas registradas.")
     return etiquetas
 
+
 def asignar_etiqueta_a_tarjeta(id_tarjeta, id_etiqueta):
+    """Asigna una etiqueta a una tarjeta específica."""
     return TarjetaEtiqueta.create(id_tarjeta=id_tarjeta, id_etiqueta=id_etiqueta)
