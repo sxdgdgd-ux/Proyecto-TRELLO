@@ -1,3 +1,5 @@
+from datetime import date, datetime
+
 from peewee import (
     AutoField,
     CharField,
@@ -8,19 +10,19 @@ from peewee import (
     IntegerField,
     Model,
     MySQLDatabase,
-    SQL,
     TextField,
 )
 from decouple import config
+from peewee import PeeweeException
 
 database = MySQLDatabase(
-    config('db'),
+    config('db', default='trello_db'),
     **{
         'charset': 'utf8mb4',
-        'host': config('host'),
-        'port': config('port', cast=int),
-        'user': config('user'),
-        'password': config('password'),
+        'host': config('host', default='localhost'),
+        'port': config('port', default=3306, cast=int),
+        'user': config('user', default='root'),
+        'password': config('password', default=''),
     }
 )
 
@@ -34,7 +36,7 @@ class Proyecto(BaseModel):
     id_proyecto = AutoField()
     nombre_proyecto = CharField(max_length=100)
     descripcion = TextField(null=True)
-    fecha_creacion = DateField(constraints=[SQL("DEFAULT (CURRENT_DATE)")])
+    fecha_creacion = DateField(default=date.today)
 
     class Meta:
         table_name = "proyecto"
@@ -52,7 +54,7 @@ class Usuario(BaseModel):
 class Etiqueta(BaseModel):
     id_etiqueta = AutoField()
     nombre = CharField(max_length=50)
-    color = CharField(max_length=20)
+    color = CharField(max_length=20, default="#808080")
 
     class Meta:
         table_name = "etiqueta"
@@ -65,7 +67,7 @@ class ProyectoUsuario(BaseModel):
     id_usuario = ForeignKeyField(
         Usuario, column_name="id_usuario", on_delete="CASCADE"
     )
-    rol = CharField(max_length=50)
+    rol = CharField(max_length=20, default="Miembro")
 
     class Meta:
         table_name = "proyecto_usuario"
@@ -83,13 +85,27 @@ class Tablero(BaseModel):
         table_name = "tablero"
 
 
+class TableroUsuario(BaseModel):
+    id_tablero = ForeignKeyField(
+        Tablero, column_name="id_tablero", on_delete="CASCADE"
+    )
+    id_usuario = ForeignKeyField(
+        Usuario, column_name="id_usuario", on_delete="CASCADE"
+    )
+    rol = CharField(max_length=20, default="Miembro")
+
+    class Meta:
+        table_name = "tablero_usuario"
+        primary_key = CompositeKey("id_tablero", "id_usuario")
+
+
 class Lista(BaseModel):
     id_lista = AutoField()
     id_tablero = ForeignKeyField(
         Tablero, column_name="id_tablero", on_delete="CASCADE"
     )
     nombre_lista = CharField(max_length=100)
-    posicion = IntegerField()
+    posicion = IntegerField(default=0)
 
     class Meta:
         table_name = "lista"
@@ -103,7 +119,7 @@ class Tarjeta(BaseModel):
     titulo = CharField(max_length=150)
     descripcion = TextField(null=True)
     fecha_limite = DateField(null=True)
-    estado = CharField(max_length=50, null=True)
+    estado = CharField(max_length=50, default="Pendiente")
 
     class Meta:
         table_name = "tarjeta"
@@ -131,9 +147,7 @@ class Comentario(BaseModel):
         Usuario, column_name="id_usuario", on_delete="CASCADE"
     )
     texto = TextField()
-    fecha_creacion = DateTimeField(
-        constraints=[SQL("DEFAULT CURRENT_TIMESTAMP")]
-    )
+    fecha_creacion = DateTimeField(default=datetime.now)
 
     class Meta:
         table_name = "comentario"
@@ -153,18 +167,28 @@ class TarjetaEtiqueta(BaseModel):
 
 
 def crear_tablas():
-    with database:
-        database.create_tables(
-            [
-                Proyecto,
-                Usuario,
-                Etiqueta,
-                ProyectoUsuario,
-                Tablero,
-                Lista,
-                Tarjeta,
-                AsignacionTarjeta,
-                Comentario,
-                TarjetaEtiqueta,
-            ]
+    try:
+        with database:
+            database.create_tables(
+                [
+                    Proyecto,
+                    Usuario,
+                    Etiqueta,
+                    ProyectoUsuario,
+                    Tablero,
+                    TableroUsuario,
+                    Lista,
+                    Tarjeta,
+                    AsignacionTarjeta,
+                    Comentario,
+                    TarjetaEtiqueta,
+                ]
+            )
+        return True
+    except (PeeweeException, OSError) as error:
+        print(
+            "No se pudo conectar a MySQL ni preparar las tablas. "
+            "Verifica que XAMPP/MySQL esté encendido y la configuración "
+            f"del .env: {error}"
         )
+        return False

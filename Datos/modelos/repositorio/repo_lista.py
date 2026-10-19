@@ -20,6 +20,21 @@ def obtener_lista_por_id(id_lista):
     return Lista.get_or_none(Lista.id_lista == id_lista)
 
 
+def actualizar_lista(id_lista, nombre_lista=None, posicion=None, id_tablero=None):
+    """Actualiza los campos indicados de una lista."""
+    lista = obtener_lista_por_id(id_lista)
+    if not lista:
+        return None
+    if nombre_lista is not None:
+        lista.nombre_lista = nombre_lista
+    if posicion is not None:
+        lista.posicion = posicion
+    if id_tablero is not None:
+        lista.id_tablero = id_tablero
+    lista.save()
+    return lista
+
+
 def eliminar_lista(id_lista):
     """Elimina una lista de tareas."""
     lista = obtener_lista_por_id(id_lista)

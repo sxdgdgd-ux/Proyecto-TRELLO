@@ -18,14 +18,15 @@ CREATE TABLE USUARIO (
 CREATE TABLE ETIQUETA (
     id_etiqueta INT AUTO_INCREMENT PRIMARY KEY,
     nombre VARCHAR(50) NOT NULL,
-    color VARCHAR(20) NOT NULL
+    color VARCHAR(20) NOT NULL DEFAULT '#808080'
 ) ENGINE=InnoDB;
 
 -- Estructura de proyectos y tableros
 CREATE TABLE PROYECTO_USUARIO (
     id_proyecto INT NOT NULL,
     id_usuario INT NOT NULL,
-    rol VARCHAR(50) NOT NULL,
+    rol ENUM('Administrador', 'Lider', 'Miembro', 'Observador')
+        NOT NULL DEFAULT 'Miembro',
     PRIMARY KEY (id_proyecto, id_usuario),
     CONSTRAINT fk_pu_proyecto FOREIGN KEY (id_proyecto)
         REFERENCES PROYECTO(id_proyecto) ON DELETE CASCADE,
@@ -41,11 +42,23 @@ CREATE TABLE TABLERO (
         REFERENCES PROYECTO(id_proyecto) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
+CREATE TABLE TABLERO_USUARIO (
+    id_tablero INT NOT NULL,
+    id_usuario INT NOT NULL,
+    rol ENUM('Administrador', 'Lider', 'Miembro', 'Observador')
+        NOT NULL DEFAULT 'Miembro',
+    PRIMARY KEY (id_tablero, id_usuario),
+    CONSTRAINT fk_tu_tablero FOREIGN KEY (id_tablero)
+        REFERENCES TABLERO(id_tablero) ON DELETE CASCADE,
+    CONSTRAINT fk_tu_usuario FOREIGN KEY (id_usuario)
+        REFERENCES USUARIO(id_usuario) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
 CREATE TABLE LISTA (
     id_lista INT AUTO_INCREMENT PRIMARY KEY,
     id_tablero INT NOT NULL,
     nombre_lista VARCHAR(100) NOT NULL,
-    posicion INT NOT NULL,
+    posicion INT NOT NULL DEFAULT 0,
     CONSTRAINT fk_lista_tablero FOREIGN KEY (id_tablero)
         REFERENCES TABLERO(id_tablero) ON DELETE CASCADE
 ) ENGINE=InnoDB;
@@ -56,7 +69,7 @@ CREATE TABLE TARJETA (
     titulo VARCHAR(150) NOT NULL,
     descripcion TEXT,
     fecha_limite DATE NULL,
-    estado VARCHAR(50) NULL,
+    estado VARCHAR(50) NOT NULL DEFAULT 'Pendiente',
     CONSTRAINT fk_tarjeta_lista FOREIGN KEY (id_lista)
         REFERENCES LISTA(id_lista) ON DELETE CASCADE
 ) ENGINE=InnoDB;

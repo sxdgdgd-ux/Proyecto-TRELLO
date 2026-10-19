@@ -11,6 +11,7 @@ from Datos.modelos.models import (
     TarjetaEtiqueta,
     Usuario,
 )
+from conexion import conectar_bd
 
 
 def mostrar_menu():
@@ -142,6 +143,8 @@ def buscar_usuario():
 
 
 def ejecutar():
+    if not conectar_bd():
+        return
     while True:
         mostrar_menu()
         opcion = input("Selecciona una opción (0-5): ").strip()

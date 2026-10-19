@@ -12,7 +12,7 @@ def crear_usuario(nombre, email):
 
 def listado_usuarios():
     """Obtiene el listado de todos los usuarios registrados."""
-    usuarios = Usuario.select()
+    usuarios = Usuario.select().order_by(Usuario.nombre, Usuario.id_usuario)
     if not usuarios:
         print("No hay usuarios registrados.")
     return usuarios
