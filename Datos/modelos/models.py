@@ -9,22 +9,11 @@ from peewee import (
     ForeignKeyField,
     IntegerField,
     Model,
-    MySQLDatabase,
     TextField,
 )
-from decouple import config
 from peewee import PeeweeException
 
-database = MySQLDatabase(
-    config('db', default='trello_db'),
-    **{
-        'charset': 'utf8mb4',
-        'host': config('host', default='localhost'),
-        'port': config('port', default=3306, cast=int),
-        'user': config('user', default='root'),
-        'password': config('password', default=''),
-    }
-)
+from Datos.conexion import database
 
 
 class BaseModel(Model):
