@@ -12,12 +12,14 @@ from Datos.modelos.models import (
     Usuario,
 )
 from Datos.conexion import conectar_bd
+from Datos.modelos import models as modelos
+from Datos.repositorio import repo_usuario
 from presentacion.auxiliares import mostrar_tabla as _mostrar_tabla
 
 
 def mostrar_menu():
     print("\n==================================================")
-    print("       📋 MENÚ DE CONSULTAS INTERACTIVAS")
+    print("       MENU DE CONSULTAS INTERACTIVAS")
     print("==================================================")
     print("1. Consultar todos los Usuarios")
     print("2. Consultar todos los Proyectos y sus Miembros")
@@ -29,7 +31,7 @@ def mostrar_menu():
 
 
 def listar_usuarios():
-    usuarios = Usuario.select().order_by(Usuario.nombre, Usuario.id_usuario)
+    usuarios = repo_usuario.listado_usuarios()
     _mostrar_tabla(
         "LISTA DE USUARIOS",
         ["ID", "Nombre", "Email"],
@@ -277,7 +279,7 @@ def buscar_usuario():
 
 
 def ejecutar():
-    if not conectar_bd():
+    if not conectar_bd() or not modelos.crear_tablas():
         return
     while True:
         mostrar_menu()

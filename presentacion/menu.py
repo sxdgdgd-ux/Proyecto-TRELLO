@@ -106,7 +106,7 @@ def _usuario_actual():
 
 
 def listar_usuarios():
-    usuarios = repo_usuario.listado_usuarios()
+    usuarios = servicio_usuario.procesar_listado_usuario()
     mostrar_tabla(
         "USUARIOS",
         ["ID", "Nombre", "Email"],

@@ -10,14 +10,8 @@ MAX_LONGITUD_EMAIL = 150
 
 
 def procesar_listado_usuario():
-    """Muestra todos los usuarios registrados."""
-    usuarios = list(repo_usuario.listado_usuarios())
-    if not usuarios:
-        return
-
-    print("\n--- USUARIOS ---")
-    for usuario in usuarios:
-        print(f"ID: {usuario.id_usuario} | {usuario.nombre} | {usuario.email}")
+    """Obtiene una lectura actualizada de los usuarios registrados."""
+    return repo_usuario.listado_usuarios()
 
 
 def crear_usuario(nombre: str, email: str):
