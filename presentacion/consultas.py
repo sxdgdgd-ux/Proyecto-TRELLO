@@ -1,6 +1,4 @@
 """Menú interactivo para consultar los datos del tablero."""
-from prettytable import PrettyTable
-
 from Datos.modelos.models import (
     AsignacionTarjeta,
     Comentario,
@@ -14,18 +12,7 @@ from Datos.modelos.models import (
     Usuario,
 )
 from Datos.conexion import conectar_bd
-
-
-def _mostrar_tabla(titulo, encabezados, filas, mensaje_vacio):
-    print(f"\n--- {titulo} ---")
-    if not filas:
-        print(mensaje_vacio)
-        return
-
-    tabla = PrettyTable()
-    tabla.field_names = encabezados
-    tabla.add_rows(filas)
-    print(tabla)
+from presentacion.auxiliares import mostrar_tabla as _mostrar_tabla
 
 
 def mostrar_menu():
@@ -251,7 +238,12 @@ def listar_tarjetas_por_estado():
         .order_by(Tarjeta.estado, Tarjeta.id_tarjeta)
     )
     if not tarjetas:
-        print(f"No se encontraron tarjetas con el estado '{estado}'.")
+        _mostrar_tabla(
+            "TARJETAS ENCONTRADAS",
+            ["ID", "Título", "Estado", "Fecha límite"],
+            [],
+            f"No se encontraron tarjetas con el estado '{estado}'.",
+        )
         return
     filas = [
         [tar.id_tarjeta, tar.titulo, tar.estado, tar.fecha_limite or "-"]
@@ -276,7 +268,12 @@ def buscar_usuario():
             "No se encontró el usuario.",
         )
     else:
-        print(f"\n❌ No existe ningún usuario registrado con el correo: {email}")
+        _mostrar_tabla(
+            "USUARIO ENCONTRADO",
+            ["ID", "Nombre", "Email"],
+            [],
+            f"No existe ningún usuario registrado con el correo: {email}",
+        )
 
 
 def ejecutar():

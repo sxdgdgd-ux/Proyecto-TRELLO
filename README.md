@@ -36,6 +36,10 @@ de compatibilidad; las implementaciones están dentro de `Datos/`.
 
 ## Configuración y ejecución
 
+Instala las dependencias del proyecto desde la raíz:
+
+- `python -m pip install -r requirements.txt`
+
 Configura la conexión en un archivo `.env` local (no se incluye en Git) con las
 variables `db`, `host`, `port`, `user` y `password`. Crea la base y sus tablas
 ejecutando uno de los scripts en `Datos/sql/` y luego inicia:

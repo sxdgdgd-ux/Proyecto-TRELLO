@@ -1,0 +1,4 @@
+prettytable
+peewee
+PyMySQL
+python-decouple

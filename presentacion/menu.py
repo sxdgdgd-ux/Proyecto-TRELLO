@@ -1,7 +1,7 @@
 """Menú de consola para operar proyectos, tableros, listas y tarjetas."""
 from peewee import PeeweeException
 
-from presentacion.auxiliares import nombre_app, version_app
+from presentacion.auxiliares import mostrar_tabla, nombre_app, version_app
 from Datos.conexion import conectar_bd
 from Datos.modelos import models as modelos
 from Datos.modelos.models import (
@@ -71,9 +71,15 @@ def _usuario_actual():
     while True:
         usuarios = list(repo_usuario.listado_usuarios())
         if usuarios:
-            print("\nUsuarios disponibles:")
-            for usuario in usuarios:
-                print(f"{usuario.id_usuario}. {usuario.nombre} <{usuario.email}>")
+            mostrar_tabla(
+                "USUARIOS DISPONIBLES",
+                ["ID", "Nombre", "Email"],
+                [
+                    [usuario.id_usuario, usuario.nombre, usuario.email]
+                    for usuario in usuarios
+                ],
+                "No hay usuarios registrados.",
+            )
             print("0. Registrar un usuario nuevo")
             seleccion = pedir("Selecciona el usuario de esta sesión: ")
             if seleccion.isdigit() and int(seleccion) > 0:
@@ -100,13 +106,16 @@ def _usuario_actual():
 
 
 def listar_usuarios():
-    print("\n--- USUARIOS ---")
     usuarios = repo_usuario.listado_usuarios()
-    if not usuarios:
-        print("No hay usuarios registrados.")
-        return
-    for usuario in usuarios:
-        print(f"ID: {usuario.id_usuario} | {usuario.nombre} | {usuario.email}")
+    mostrar_tabla(
+        "USUARIOS",
+        ["ID", "Nombre", "Email"],
+        [
+            [usuario.id_usuario, usuario.nombre, usuario.email]
+            for usuario in usuarios
+        ],
+        "No hay usuarios registrados.",
+    )
 
 
 def menu_usuarios():
@@ -147,25 +156,34 @@ def menu_usuarios():
 
 
 def listar_proyectos():
-    print("\n--- PROYECTOS ---")
     proyectos = repo_proyecto.listado_proyectos()
-    if not proyectos:
-        print("No hay proyectos registrados.")
-        return
-    for proyecto in proyectos:
-        print(
-            f"ID: {proyecto.id_proyecto} | {proyecto.nombre_proyecto}"
-            f" | {proyecto.descripcion or 'Sin descripción'}"
-        )
+    mostrar_tabla(
+        "PROYECTOS",
+        ["ID", "Nombre", "Descripción"],
+        [
+            [
+                proyecto.id_proyecto,
+                proyecto.nombre_proyecto,
+                proyecto.descripcion or "Sin descripción",
+            ]
+            for proyecto in proyectos
+        ],
+        "No hay proyectos registrados.",
+    )
 
 
 def _listar_miembros_proyecto(id_proyecto):
     asignaciones = repo_proyecto.listar_usuarios_proyecto(id_proyecto)
+    filas = []
     for asignacion in asignaciones:
         usuario = Usuario.get_by_id(asignacion.id_usuario)
-        print(f"{usuario.id_usuario}. {usuario.nombre} — {asignacion.rol}")
-    if not asignaciones:
-        print("El proyecto no tiene miembros.")
+        filas.append([usuario.id_usuario, usuario.nombre, asignacion.rol])
+    mostrar_tabla(
+        "MIEMBROS DEL PROYECTO",
+        ["ID usuario", "Nombre", "Rol"],
+        filas,
+        "El proyecto no tiene miembros.",
+    )
 
 
 def menu_proyectos(usuario_actual):
@@ -253,23 +271,30 @@ def crear_proyecto_consola(usuario_actual):
 
 def _mostrar_tablero(id_tablero):
     listas = repo_lista.listado_listas_por_tablero(id_tablero)
-    if not listas:
-        print("Este tablero todavía no tiene listas.")
+    filas = []
     for lista in listas:
-        print(f"\nLista {lista.id_lista}: {lista.nombre_lista} (posición {lista.posicion})")
-        for tarjeta in repo_tarjeta.listado_tarjetas_por_lista(lista.id_lista):
-            print(
-                f"  Tarjeta {tarjeta.id_tarjeta}: {tarjeta.titulo}"
-                f" | {tarjeta.estado or 'Pendiente'}"
+        tarjetas = list(repo_tarjeta.listado_tarjetas_por_lista(lista.id_lista))
+        if not tarjetas:
+            filas.append(
+                [
+                    lista.id_lista,
+                    lista.nombre_lista,
+                    lista.posicion,
+                    "-",
+                    "Sin tarjetas",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                ]
             )
+        for tarjeta in tarjetas:
             asignados = [
                 Usuario.get_by_id(asignacion.id_usuario).nombre
                 for asignacion in repo_tarjeta.listar_usuarios_asignados(
                     tarjeta.id_tarjeta
                 )
             ]
-            if asignados:
-                print(f"    Asignados: {', '.join(asignados)}")
             etiquetas = (
                 Etiqueta.select()
                 .join(TarjetaEtiqueta)
@@ -277,27 +302,71 @@ def _mostrar_tablero(id_tablero):
                 .order_by(Etiqueta.nombre)
             )
             nombres_etiquetas = [etiqueta.nombre for etiqueta in etiquetas]
-            if nombres_etiquetas:
-                print(f"    Etiquetas: {', '.join(nombres_etiquetas)}")
-            for comentario in repo_comentario.listado_comentarios_por_tarjeta(
+            comentarios = repo_comentario.listado_comentarios_por_tarjeta(
                 tarjeta.id_tarjeta
-            ):
+            )
+            comentarios_texto = []
+            for comentario in comentarios:
                 autor = Usuario.get_by_id(comentario.id_usuario)
-                print(f"    Comentario de {autor.nombre}: {comentario.texto}")
+                comentarios_texto.append(f"{autor.nombre}: {comentario.texto}")
+            filas.append(
+                [
+                    lista.id_lista,
+                    lista.nombre_lista,
+                    lista.posicion,
+                    tarjeta.id_tarjeta,
+                    tarjeta.titulo,
+                    tarjeta.estado or "Pendiente",
+                    ", ".join(asignados) or "-",
+                    ", ".join(nombres_etiquetas) or "-",
+                    "\n".join(comentarios_texto) or "-",
+                ]
+            )
+    if not listas:
+        filas = []
+    mostrar_tabla(
+        "CONTENIDO DEL TABLERO",
+        [
+            "ID lista",
+            "Lista",
+            "Posición",
+            "ID tarjeta",
+            "Tarjeta",
+            "Estado",
+            "Asignados",
+            "Etiquetas",
+            "Comentarios",
+        ],
+        filas,
+        "Este tablero todavía no tiene listas.",
+    )
 
 
 def _seleccionar_tarjeta(id_tablero):
+    filas = []
     for lista in repo_lista.listado_listas_por_tablero(id_tablero):
         for tarjeta in repo_tarjeta.listado_tarjetas_por_lista(lista.id_lista):
-            print(f"{tarjeta.id_tarjeta}. {tarjeta.titulo} (lista {lista.nombre_lista})")
+            filas.append([tarjeta.id_tarjeta, tarjeta.titulo, lista.nombre_lista])
+    mostrar_tabla(
+        "TARJETAS",
+        ["ID", "Título", "Lista"],
+        filas,
+        "No hay tarjetas en este tablero.",
+    )
     return pedir_entero("ID de la tarjeta: ")
 
 
 def _gestionar_miembros_tablero(id_tablero, usuario_actual):
-    print("Miembros del tablero:")
+    filas = []
     for asignacion in repo_tablero.listar_usuarios_tablero(id_tablero):
         usuario = Usuario.get_by_id(asignacion.id_usuario)
-        print(f"{usuario.id_usuario}. {usuario.nombre} — {asignacion.rol}")
+        filas.append([usuario.id_usuario, usuario.nombre, asignacion.rol])
+    mostrar_tabla(
+        "MIEMBROS DEL TABLERO",
+        ["ID usuario", "Nombre", "Rol"],
+        filas,
+        "El tablero no tiene miembros.",
+    )
     opcion = pedir("1. Asignar/cambiar rol | 2. Quitar miembro | 0. Volver: ")
     if opcion == "1":
         usuario_id = pedir_entero("ID del usuario: ")
@@ -433,8 +502,20 @@ def menu_tablero(tablero, usuario_actual):
         elif opcion == "10":
             tarjeta_id = _seleccionar_tarjeta(tablero.id_tablero)
             comentarios = repo_comentario.listado_comentarios_por_tarjeta(tarjeta_id)
-            for comentario in comentarios:
-                print(f"{comentario.id_comentario}. {comentario.texto}")
+            mostrar_tabla(
+                "COMENTARIOS DE LA TARJETA",
+                ["ID", "Comentario", "Autor", "Fecha"],
+                [
+                    [
+                        comentario.id_comentario,
+                        comentario.texto,
+                        Usuario.get_by_id(comentario.id_usuario).nombre,
+                        comentario.fecha_creacion,
+                    ]
+                    for comentario in comentarios
+                ],
+                "La tarjeta no tiene comentarios.",
+            )
             comentario_id = pedir_entero("ID del comentario a eliminar: ")
             eliminado = ejecutar_accion(
                 servicio.eliminar_comentario,
@@ -456,8 +537,15 @@ def menu_tablero(tablero, usuario_actual):
         elif opcion in ("12", "13"):
             tarjeta_id = _seleccionar_tarjeta(tablero.id_tablero)
             etiquetas = repo_etiqueta.listado_etiquetas()
-            for etiqueta in etiquetas:
-                print(f"{etiqueta.id_etiqueta}. {etiqueta.nombre} ({etiqueta.color})")
+            mostrar_tabla(
+                "ETIQUETAS",
+                ["ID", "Nombre", "Color"],
+                [
+                    [etiqueta.id_etiqueta, etiqueta.nombre, etiqueta.color]
+                    for etiqueta in etiquetas
+                ],
+                "No hay etiquetas registradas.",
+            )
             etiqueta_id = pedir_entero("ID de la etiqueta: ")
             if opcion == "12":
                 relacion = ejecutar_accion(
@@ -499,9 +587,15 @@ def menu_tablero(tablero, usuario_actual):
         elif opcion in ("16", "17"):
             tarjeta_id = _seleccionar_tarjeta(tablero.id_tablero)
             if opcion == "16":
-                print("Usuarios registrados (solo miembros del tablero podrán asignarse):")
-                for usuario in repo_usuario.listado_usuarios():
-                    print(f"{usuario.id_usuario}. {usuario.nombre}")
+                mostrar_tabla(
+                    "USUARIOS REGISTRADOS",
+                    ["ID", "Nombre", "Email"],
+                    [
+                        [usuario.id_usuario, usuario.nombre, usuario.email]
+                        for usuario in repo_usuario.listado_usuarios()
+                    ],
+                    "No hay usuarios registrados.",
+                )
                 usuario_id = pedir_entero("ID del miembro a asignar: ")
                 asignacion = ejecutar_accion(
                     servicio.asignar_usuario_tarjeta,
@@ -512,9 +606,17 @@ def menu_tablero(tablero, usuario_actual):
                 if asignacion:
                     print("Usuario asignado a la tarjeta.")
             else:
-                for asignacion in repo_tarjeta.listar_usuarios_asignados(tarjeta_id):
+                asignaciones = repo_tarjeta.listar_usuarios_asignados(tarjeta_id)
+                usuarios_asignados = []
+                for asignacion in asignaciones:
                     usuario = Usuario.get_by_id(asignacion.id_usuario)
-                    print(f"{usuario.id_usuario}. {usuario.nombre}")
+                    usuarios_asignados.append([usuario.id_usuario, usuario.nombre])
+                mostrar_tabla(
+                    "USUARIOS ASIGNADOS A LA TARJETA",
+                    ["ID", "Nombre"],
+                    usuarios_asignados,
+                    "La tarjeta no tiene usuarios asignados.",
+                )
                 usuario_id = pedir_entero("ID del usuario a quitar: ")
                 eliminado = ejecutar_accion(
                     servicio.quitar_usuario_tarjeta,
@@ -525,8 +627,21 @@ def menu_tablero(tablero, usuario_actual):
                 print("Asignación retirada." if eliminado else "No estaba asignado.")
         elif opcion == "18":
             tarjeta_id = _seleccionar_tarjeta(tablero.id_tablero)
-            for comentario in repo_comentario.listado_comentarios_por_tarjeta(tarjeta_id):
-                print(f"{comentario.id_comentario}. {comentario.texto}")
+            comentarios = repo_comentario.listado_comentarios_por_tarjeta(tarjeta_id)
+            mostrar_tabla(
+                "COMENTARIOS DE LA TARJETA",
+                ["ID", "Comentario", "Autor", "Fecha"],
+                [
+                    [
+                        comentario.id_comentario,
+                        comentario.texto,
+                        Usuario.get_by_id(comentario.id_usuario).nombre,
+                        comentario.fecha_creacion,
+                    ]
+                    for comentario in comentarios
+                ],
+                "La tarjeta no tiene comentarios.",
+            )
             comentario_id = pedir_entero("ID del comentario a actualizar: ")
             texto = pedir("Nuevo comentario: ")
             comentario = ejecutar_accion(
@@ -538,8 +653,15 @@ def menu_tablero(tablero, usuario_actual):
             print("Comentario actualizado." if comentario else "Comentario no encontrado.")
         elif opcion in ("19", "20"):
             etiquetas = repo_etiqueta.listado_etiquetas()
-            for etiqueta in etiquetas:
-                print(f"{etiqueta.id_etiqueta}. {etiqueta.nombre} ({etiqueta.color})")
+            mostrar_tabla(
+                "ETIQUETAS",
+                ["ID", "Nombre", "Color"],
+                [
+                    [etiqueta.id_etiqueta, etiqueta.nombre, etiqueta.color]
+                    for etiqueta in etiquetas
+                ],
+                "No hay etiquetas registradas.",
+            )
             etiqueta_id = pedir_entero("ID de la etiqueta: ")
             if opcion == "19":
                 nombre = pedir("Nuevo nombre: ")
@@ -573,13 +695,24 @@ def menu_tableros(usuario_actual):
         )
         if tableros is None:
             return
+        filas = []
         for tablero in tableros:
             proyecto = Proyecto.get_by_id(tablero.id_proyecto)
             rol = servicio.rol_en_tablero(tablero.id_tablero, usuario_actual.id_usuario)
-            print(
-                f"{tablero.id_tablero}. {tablero.titulo} — "
-                f"{proyecto.nombre_proyecto} [{rol}]"
+            filas.append(
+                [
+                    tablero.id_tablero,
+                    tablero.titulo,
+                    proyecto.nombre_proyecto,
+                    rol,
+                ]
             )
+        mostrar_tabla(
+            "TABLEROS",
+            ["ID", "Tablero", "Proyecto", "Rol"],
+            filas,
+            "No tienes tableros disponibles.",
+        )
         print("1. Crear tablero | 2. Abrir tablero | 0. Volver")
         opcion = pedir("Opción: ")
         if opcion == "0":
