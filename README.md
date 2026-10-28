@@ -40,6 +40,7 @@ Configura la conexión en un archivo `.env` local (no se incluye en Git) con las
 variables `db`, `host`, `port`, `user` y `password`. Crea la base y sus tablas
 ejecutando uno de los scripts en `Datos/sql/` y luego inicia:
 
+- `python main.py`: abre un menú para elegir entre gestión y consultas.
 - `python app.py`: consultas de usuarios, proyectos, tableros y tarjetas.
 - `python menu.py`: gestión interactiva de usuarios, proyectos, tableros,
   listas y tarjetas.
