@@ -24,6 +24,7 @@ from Datos.repositorio import (
     repo_tarjeta,
     repo_usuario,
 )
+from negocio import servicio_usuario
 from negocio import servicio_trello as servicio
 
 
@@ -86,11 +87,11 @@ def _usuario_actual():
                 continue
         nombre = pedir("Nombre: ")
         email = pedir("Email: ")
-        if not nombre or not email or "@" not in email:
-            print("El nombre y un email válido son obligatorios.")
-            continue
         try:
-            usuario = repo_usuario.crear_usuario(nombre, email)
+            usuario = servicio_usuario.crear_usuario(nombre, email)
+        except ValueError as error:
+            print(f"No se pudo registrar el usuario: {error}")
+            continue
         except PeeweeException as error:
             print(f"No se pudo registrar el usuario: {error}")
             continue
@@ -120,10 +121,9 @@ def menu_usuarios():
         elif opcion == "2":
             nombre = pedir("Nombre: ")
             email = pedir("Email: ")
-            if not nombre or "@" not in email:
-                print("Debes indicar un nombre y un email válido.")
-                continue
-            usuario = ejecutar_accion(repo_usuario.crear_usuario, nombre, email)
+            usuario = ejecutar_accion(
+                servicio_usuario.crear_usuario, nombre, email
+            )
             if usuario:
                 print(f"Usuario registrado (ID {usuario.id_usuario}).")
         elif opcion == "3":

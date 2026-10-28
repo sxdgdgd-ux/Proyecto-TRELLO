@@ -1,4 +1,6 @@
 """Menú interactivo para consultar los datos del tablero."""
+from prettytable import PrettyTable
+
 from Datos.modelos.models import (
     AsignacionTarjeta,
     Comentario,
@@ -12,6 +14,18 @@ from Datos.modelos.models import (
     Usuario,
 )
 from Datos.conexion import conectar_bd
+
+
+def _mostrar_tabla(titulo, encabezados, filas, mensaje_vacio):
+    print(f"\n--- {titulo} ---")
+    if not filas:
+        print(mensaje_vacio)
+        return
+
+    tabla = PrettyTable()
+    tabla.field_names = encabezados
+    tabla.add_rows(filas)
+    print(tabla)
 
 
 def mostrar_menu():
@@ -28,91 +42,201 @@ def mostrar_menu():
 
 
 def listar_usuarios():
-    print("\n--- LISTA DE USUARIOS ---")
     usuarios = Usuario.select().order_by(Usuario.nombre, Usuario.id_usuario)
-    if not usuarios:
-        print("No hay usuarios registrados.")
-        return
-    for u in usuarios:
-        print(f"ID: {u.id_usuario} | Nombre: {u.nombre} | Email: {u.email}")
+    _mostrar_tabla(
+        "LISTA DE USUARIOS",
+        ["ID", "Nombre", "Email"],
+        [[u.id_usuario, u.nombre, u.email] for u in usuarios],
+        "No hay usuarios registrados.",
+    )
 
 
 def listar_proyectos():
-    print("\n--- PROYECTOS Y MIEMBROS ---")
     proyectos = Proyecto.select().order_by(Proyecto.id_proyecto)
     if not proyectos:
-        print("No hay proyectos registrados.")
+        _mostrar_tabla(
+            "PROYECTOS Y MIEMBROS",
+            ["ID proyecto", "Proyecto", "Descripción", "Miembro", "Rol"],
+            [],
+            "No hay proyectos registrados.",
+        )
         return
+
+    filas = []
     for p in proyectos:
-        print(f"\n📌 Proyecto ID {p.id_proyecto}: {p.nombre_proyecto}")
-        print(f"   Descripción: {p.descripcion}")
-        
         miembros = (
             ProyectoUsuario.select(ProyectoUsuario, Usuario)
             .join(Usuario)
             .where(ProyectoUsuario.id_proyecto == p.id_proyecto)
             .order_by(Usuario.nombre, Usuario.id_usuario)
         )
-        print("   Miembros:")
-        for m in miembros:
-            print(f"     - {m.id_usuario.nombre} (Rol: {m.rol})")
+        miembros = list(miembros)
+        if miembros:
+            filas.extend(
+                [
+                    p.id_proyecto,
+                    p.nombre_proyecto,
+                    p.descripcion or "Sin descripción",
+                    miembro.id_usuario.nombre,
+                    miembro.rol,
+                ]
+                for miembro in miembros
+            )
+        else:
+            filas.append(
+                [
+                    p.id_proyecto,
+                    p.nombre_proyecto,
+                    p.descripcion or "Sin descripción",
+                    "Sin miembros",
+                    "-",
+                ]
+            )
+    _mostrar_tabla(
+        "PROYECTOS Y MIEMBROS",
+        ["ID proyecto", "Proyecto", "Descripción", "Miembro", "Rol"],
+        filas,
+        "No hay proyectos registrados.",
+    )
 
 
 def listar_tableros():
-    print("\n--- TABLEROS Y LISTAS ---")
     tableros = Tablero.select().order_by(Tablero.id_proyecto, Tablero.id_tablero)
     if not tableros:
-        print("No hay tableros registrados.")
+        _mostrar_tabla(
+            "TABLEROS, LISTAS Y TARJETAS",
+            [
+                "ID tablero",
+                "Tablero",
+                "Proyecto",
+                "ID lista",
+                "Lista",
+                "Posición",
+                "ID tarjeta",
+                "Tarjeta",
+                "Estado",
+                "Asignados",
+                "Etiquetas",
+                "Comentarios",
+            ],
+            [],
+            "No hay tableros registrados.",
+        )
         return
+
+    filas = []
     for t in tableros:
-        print(f"\n📋 Tablero ID {t.id_tablero}: '{t.titulo}' (Proyecto: {t.id_proyecto.nombre_proyecto})")
         listas = (
             Lista.select()
             .where(Lista.id_tablero == t.id_tablero)
             .order_by(Lista.posicion, Lista.id_lista)
         )
+        listas = list(listas)
         if not listas:
-            print("   (Sin listas)")
+            filas.append(
+                [
+                    t.id_tablero,
+                    t.titulo,
+                    t.id_proyecto.nombre_proyecto,
+                    "-",
+                    "Sin listas",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                ]
+            )
         for l in listas:
-            print(f"   📂 Lista ID {l.id_lista}: {l.nombre_lista} (Posición {l.posicion})")
             tarjetas = (
                 Tarjeta.select()
                 .where(Tarjeta.id_lista == l.id_lista)
                 .order_by(Tarjeta.id_tarjeta)
             )
+            tarjetas = list(tarjetas)
             if not tarjetas:
-                print("      (Sin tarjetas)")
+                filas.append(
+                    [
+                        t.id_tablero,
+                        t.titulo,
+                        t.id_proyecto.nombre_proyecto,
+                        l.id_lista,
+                        l.nombre_lista,
+                        l.posicion,
+                        "-",
+                        "Sin tarjetas",
+                        "-",
+                        "-",
+                        "-",
+                        "-",
+                    ]
+                )
             for tarjeta in tarjetas:
-                print(f"      🎴 {tarjeta.titulo} | Estado: {tarjeta.estado or 'Sin estado'}")
                 asignaciones = (
                     AsignacionTarjeta.select(AsignacionTarjeta, Usuario)
                     .join(Usuario)
                     .where(AsignacionTarjeta.id_tarjeta == tarjeta.id_tarjeta)
                     .order_by(Usuario.nombre, Usuario.id_usuario)
                 )
-                if asignaciones:
-                    nombres = [asignacion.id_usuario.nombre for asignacion in asignaciones]
-                    print(f"         Asignado a: {', '.join(nombres)}")
+                nombres = [
+                    asignacion.id_usuario.nombre for asignacion in asignaciones
+                ]
                 etiquetas = (
                     TarjetaEtiqueta.select(TarjetaEtiqueta, Etiqueta)
                     .join(Etiqueta)
                     .where(TarjetaEtiqueta.id_tarjeta == tarjeta.id_tarjeta)
                     .order_by(Etiqueta.nombre)
                 )
-                if etiquetas:
-                    nombres = [relacion.id_etiqueta.nombre for relacion in etiquetas]
-                    print(f"         Etiquetas: {', '.join(nombres)}")
+                etiquetas_nombres = [
+                    relacion.id_etiqueta.nombre for relacion in etiquetas
+                ]
                 comentarios = (
                     Comentario.select(Comentario, Usuario)
                     .join(Usuario)
                     .where(Comentario.id_tarjeta == tarjeta.id_tarjeta)
                     .order_by(Comentario.fecha_creacion, Comentario.id_comentario)
                 )
-                for comentario in comentarios:
-                    print(
-                        f"         Comentario ({comentario.id_usuario.nombre}): "
-                        f"{comentario.texto}"
-                    )
+                comentarios_texto = [
+                    f"{comentario.id_usuario.nombre}: {comentario.texto}"
+                    for comentario in comentarios
+                ]
+                filas.append(
+                    [
+                        t.id_tablero,
+                        t.titulo,
+                        t.id_proyecto.nombre_proyecto,
+                        l.id_lista,
+                        l.nombre_lista,
+                        l.posicion,
+                        tarjeta.id_tarjeta,
+                        tarjeta.titulo,
+                        tarjeta.estado or "Sin estado",
+                        ", ".join(nombres) or "-",
+                        ", ".join(etiquetas_nombres) or "-",
+                        "\n".join(comentarios_texto) or "-",
+                    ]
+                )
+    _mostrar_tabla(
+        "TABLEROS, LISTAS Y TARJETAS",
+        [
+            "ID tablero",
+            "Tablero",
+            "Proyecto",
+            "ID lista",
+            "Lista",
+            "Posición",
+            "ID tarjeta",
+            "Tarjeta",
+            "Estado",
+            "Asignados",
+            "Etiquetas",
+            "Comentarios",
+        ],
+        filas,
+        "No hay tableros registrados.",
+    )
 
 
 def listar_tarjetas_por_estado():
@@ -129,15 +253,28 @@ def listar_tarjetas_por_estado():
     if not tarjetas:
         print(f"No se encontraron tarjetas con el estado '{estado}'.")
         return
-    for tar in tarjetas:
-        print(f"🎴 ID: {tar.id_tarjeta} | Título: '{tar.titulo}' | Estado: {tar.estado}")
+    filas = [
+        [tar.id_tarjeta, tar.titulo, tar.estado, tar.fecha_limite or "-"]
+        for tar in tarjetas
+    ]
+    _mostrar_tabla(
+        "TARJETAS ENCONTRADAS",
+        ["ID", "Título", "Estado", "Fecha límite"],
+        filas,
+        f"No se encontraron tarjetas con el estado '{estado}'.",
+    )
 
 
 def buscar_usuario():
     email = input("\nIngresa el email a buscar: ").strip()
     usuario = Usuario.get_or_none(Usuario.email == email)
     if usuario:
-        print(f"\n✓ Usuario encontrado -> ID: {usuario.id_usuario} | Nombre: {usuario.nombre} | Email: {usuario.email}")
+        _mostrar_tabla(
+            "USUARIO ENCONTRADO",
+            ["ID", "Nombre", "Email"],
+            [[usuario.id_usuario, usuario.nombre, usuario.email]],
+            "No se encontró el usuario.",
+        )
     else:
         print(f"\n❌ No existe ningún usuario registrado con el correo: {email}")
 
