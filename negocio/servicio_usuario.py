@@ -8,7 +8,7 @@ import secrets
 from Datos.repositorio import repo_usuario
 
 PATRON_EMAIL = re.compile(
-    r"^(?=.{1,150}$)(?=.{1,64}@)"
+    r"^(?=.{1,64}@)(?=.{1,150}$)"
     r"[A-Za-z0-9!#$%&'*+/=?^_`{|}~-]+"
     r"(?:\.[A-Za-z0-9!#$%&'*+/=?^_`{|}~-]+)*@"
     r"(?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?\.)+"
