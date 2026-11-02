@@ -44,12 +44,14 @@ Configura la conexión en un archivo `.env` local (no se incluye en Git) con las
 variables `db`, `host`, `port`, `user` y `password`. Crea la base y sus tablas
 ejecutando uno de los scripts en `Datos/sql/` y luego inicia:
 
-En bases de datos existentes, ejecuta una sola vez
-`Datos/sql/migracion_contrasena_usuario.sql` antes de iniciar la aplicación.
-El registro valida el formato del correo y exige una contraseña de 8 a 128
-caracteres con mayúscula, minúscula, número y símbolo. Las contraseñas se
-almacenan como hashes; al iniciar sesión se solicita la contraseña. Las cuentas
-anteriores sin contraseña deberán configurarla la primera vez que se usen.
+Al iniciar, la aplicación crea las tablas que falten y agrega automáticamente la
+columna `password_hash` a una tabla `usuario` existente. La cuenta de MySQL debe
+tener permisos para modificar el esquema; si no, ejecuta una sola vez
+`Datos/sql/migracion_contrasena_usuario.sql`. El registro valida el formato del
+correo y exige una contraseña de 8 a 128 caracteres con mayúscula, minúscula,
+número y símbolo. Las contraseñas se almacenan como hashes; al iniciar sesión
+se solicita la contraseña. Las cuentas anteriores sin contraseña deberán
+configurarla la primera vez que se usen.
 
 - `python main.py`: abre un menú para elegir entre gestión y consultas.
 - `python app.py`: consultas de usuarios, proyectos, tableros y tarjetas.

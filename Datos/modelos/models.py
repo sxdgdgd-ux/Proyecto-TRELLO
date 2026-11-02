@@ -156,6 +156,15 @@ class TarjetaEtiqueta(BaseModel):
         primary_key = CompositeKey("id_tarjeta", "id_etiqueta")
 
 
+def _asegurar_columna_password_hash():
+    """Actualiza tablas de usuario preexistentes para guardar hashes."""
+    columnas = database.get_columns(Usuario._meta.table_name)
+    if not any(columna.name == "password_hash" for columna in columnas):
+        database.execute_sql(
+            "ALTER TABLE usuario ADD COLUMN password_hash VARCHAR(255) NULL"
+        )
+
+
 def crear_tablas():
     try:
         with database:
@@ -174,6 +183,7 @@ def crear_tablas():
                     TarjetaEtiqueta,
                 ]
             )
+            _asegurar_columna_password_hash()
         return True
     except (PeeweeException, OSError) as error:
         print(
