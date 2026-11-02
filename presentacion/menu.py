@@ -1,4 +1,6 @@
 """Menú de consola para operar proyectos, tableros, listas y tarjetas."""
+from getpass import getpass
+
 from peewee import PeeweeException
 
 from presentacion.auxiliares import mostrar_tabla, nombre_app, version_app
@@ -37,6 +39,22 @@ def pedir(mensaje):
         return input(mensaje).strip()
     except (EOFError, KeyboardInterrupt) as error:
         raise SalirMenu from error
+
+
+def pedir_contrasena(mensaje):
+    try:
+        return getpass(mensaje)
+    except (EOFError, KeyboardInterrupt) as error:
+        raise SalirMenu from error
+
+
+def pedir_contrasena_nueva():
+    while True:
+        contrasena = pedir_contrasena("Contraseña: ")
+        confirmacion = pedir_contrasena("Confirma la contraseña: ")
+        if contrasena == confirmacion:
+            return contrasena
+        print("Las contraseñas no coinciden. Inténtalo nuevamente.")
 
 
 def pedir_entero(mensaje, opcional=False):
@@ -85,7 +103,25 @@ def _usuario_actual():
             if seleccion.isdigit() and int(seleccion) > 0:
                 usuario = repo_usuario.obtener_usuario_por_id(int(seleccion))
                 if usuario:
-                    return usuario
+                    try:
+                        if usuario.password_hash is None:
+                            contrasena = pedir_contrasena_nueva()
+                            servicio_usuario.establecer_contrasena(
+                                usuario.id_usuario, contrasena
+                            )
+                            print("Contraseña configurada para esta cuenta.")
+                            return usuario
+                        contrasena = pedir_contrasena("Contraseña: ")
+                        if servicio_usuario.autenticar_usuario(
+                            usuario.id_usuario, contrasena
+                        ):
+                            return usuario
+                        print("Contraseña incorrecta.")
+                    except ValueError as error:
+                        print(f"No se pudo validar la contraseña: {error}")
+                    except PeeweeException as error:
+                        print(f"No se pudo autenticar al usuario: {error}")
+                    continue
                 print("No existe ese usuario.")
                 continue
             if seleccion != "0":
@@ -93,8 +129,9 @@ def _usuario_actual():
                 continue
         nombre = pedir("Nombre: ")
         email = pedir("Email: ")
+        contrasena = pedir_contrasena_nueva()
         try:
-            usuario = servicio_usuario.crear_usuario(nombre, email)
+            usuario = servicio_usuario.crear_usuario(nombre, email, contrasena)
         except ValueError as error:
             print(f"No se pudo registrar el usuario: {error}")
             continue
@@ -130,8 +167,9 @@ def menu_usuarios():
         elif opcion == "2":
             nombre = pedir("Nombre: ")
             email = pedir("Email: ")
+            contrasena = pedir_contrasena_nueva()
             usuario = ejecutar_accion(
-                servicio_usuario.crear_usuario, nombre, email
+                servicio_usuario.crear_usuario, nombre, email, contrasena
             )
             if usuario:
                 print(f"Usuario registrado (ID {usuario.id_usuario}).")
@@ -139,11 +177,15 @@ def menu_usuarios():
             usuario_id = pedir_entero("ID del usuario: ")
             nombre = pedir("Nuevo nombre (vacío para mantener): ") or None
             email = pedir("Nuevo email (vacío para mantener): ") or None
-            if email and "@" not in email:
-                print("El email no es válido.")
-                continue
+            contrasena = None
+            if pedir("¿Cambiar contraseña? (s/N): ").lower() == "s":
+                contrasena = pedir_contrasena_nueva()
             usuario = ejecutar_accion(
-                repo_usuario.actualizar_usuario, usuario_id, nombre, email
+                servicio_usuario.actualizar_usuario,
+                usuario_id,
+                nombre,
+                email,
+                contrasena,
             )
             print("Usuario actualizado." if usuario else "Usuario no encontrado.")
         elif opcion == "4":

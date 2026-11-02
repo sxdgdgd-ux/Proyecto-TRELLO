@@ -2,13 +2,11 @@
 from Datos.modelos.models import Usuario
 
 
-def crear_usuario(nombre, email):
-    """Crea un nuevo usuario o recupera el existente si el correo ya esta registrado."""
-    usuario, creado = Usuario.get_or_create(
-        email=email,
-        defaults={'nombre': nombre}
+def crear_usuario(nombre, email, password_hash):
+    """Crea un usuario nuevo."""
+    return Usuario.create(
+        nombre=nombre, email=email, password_hash=password_hash
     )
-    return usuario
 
 def listado_usuarios():
     """Obtiene el listado de todos los usuarios registrados."""
@@ -20,14 +18,21 @@ def obtener_usuario_por_id(id_usuario):
     return Usuario.get_or_none(Usuario.id_usuario == id_usuario)
 
 
-def actualizar_usuario(id_usuario, nombre=None, email=None):
+def obtener_usuario_por_email(email):
+    """Busca y retorna un usuario por su correo."""
+    return Usuario.get_or_none(Usuario.email == email)
+
+
+def actualizar_usuario(id_usuario, nombre=None, email=None, password_hash=None):
     """Actualiza los datos de un usuario existente."""
     usuario = obtener_usuario_por_id(id_usuario)
     if usuario:
-        if nombre:
+        if nombre is not None:
             usuario.nombre = nombre
-        if email:
+        if email is not None:
             usuario.email = email
+        if password_hash is not None:
+            usuario.password_hash = password_hash
         usuario.save()
         return usuario
     return None

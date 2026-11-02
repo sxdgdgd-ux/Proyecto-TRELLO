@@ -35,6 +35,7 @@ class Usuario(BaseModel):
     id_usuario = AutoField()
     nombre = CharField(max_length=100)
     email = CharField(max_length=150, unique=True)
+    password_hash = CharField(max_length=255, null=True)
 
     class Meta:
         table_name = "usuario"
