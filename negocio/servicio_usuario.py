@@ -8,7 +8,9 @@ import secrets
 from Datos.repositorio import repo_usuario
 
 PATRON_EMAIL = re.compile(
-    r"^[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+@"
+    r"^(?=.{1,150}$)(?=.{1,64}@)"
+    r"[A-Za-z0-9!#$%&'*+/=?^_`{|}~-]+"
+    r"(?:\.[A-Za-z0-9!#$%&'*+/=?^_`{|}~-]+)*@"
     r"(?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?\.)+"
     r"[A-Za-z]{2,63}$"
 )
@@ -16,7 +18,6 @@ PATRON_CONTRASENA = re.compile(
     r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9\s])\S{8,128}$"
 )
 MAX_LONGITUD_NOMBRE = 100
-MAX_LONGITUD_EMAIL = 150
 ITERACIONES_HASH = 600_000
 
 
@@ -28,18 +29,7 @@ def procesar_listado_usuario():
 def validar_email(email: str) -> str:
     """Normaliza y valida el correo electrónico."""
     email = email.strip().lower() if isinstance(email, str) else ""
-    if len(email) > MAX_LONGITUD_EMAIL:
-        raise ValueError(
-            f"El correo no puede superar {MAX_LONGITUD_EMAIL} caracteres."
-        )
-    local, separador, _ = email.partition("@")
-    if (
-        not separador
-        or local.startswith(".")
-        or local.endswith(".")
-        or ".." in local
-        or not PATRON_EMAIL.fullmatch(email)
-    ):
+    if not PATRON_EMAIL.fullmatch(email):
         raise ValueError("Ingresa un correo válido, por ejemplo nombre@dominio.com.")
     return email
 
