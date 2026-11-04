@@ -48,9 +48,27 @@ def pedir_contrasena(mensaje):
         raise SalirMenu from error
 
 
+def pedir_email_valido():
+    while True:
+        email = pedir("Ingrese su correo electrónico: ")
+        try:
+            email = servicio_usuario.validar_email(email)
+        except ValueError as error:
+            print(f"No se pudo validar el correo: {error}")
+        else:
+            print("Correo válido.")
+            return email
+
+
 def pedir_contrasena_nueva():
     while True:
         contrasena = pedir_contrasena("Contraseña: ")
+        try:
+            servicio_usuario.validar_contrasena(contrasena)
+        except ValueError as error:
+            print(error)
+            continue
+
         confirmacion = pedir_contrasena("Confirma la contraseña: ")
         if contrasena == confirmacion:
             return contrasena
@@ -128,7 +146,7 @@ def _usuario_actual():
                 print("Selecciona un ID válido o 0 para registrar un usuario.")
                 continue
         nombre = pedir("Nombre: ")
-        email = pedir("Email: ")
+        email = pedir_email_valido()
         contrasena = pedir_contrasena_nueva()
         try:
             usuario = servicio_usuario.crear_usuario(nombre, email, contrasena)
@@ -166,7 +184,7 @@ def menu_usuarios():
             ejecutar_accion(listar_usuarios)
         elif opcion == "2":
             nombre = pedir("Nombre: ")
-            email = pedir("Email: ")
+            email = pedir_email_valido()
             contrasena = pedir_contrasena_nueva()
             usuario = ejecutar_accion(
                 servicio_usuario.crear_usuario, nombre, email, contrasena

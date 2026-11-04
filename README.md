@@ -49,9 +49,10 @@ columna `password_hash` a una tabla `usuario` existente. La cuenta de MySQL debe
 tener permisos para modificar el esquema; si no, ejecuta una sola vez
 `Datos/sql/migracion_contrasena_usuario.sql`. El registro valida el formato del
 correo y exige una contraseña de 8 a 128 caracteres con mayúscula, minúscula,
-número y símbolo. Las contraseñas se almacenan como hashes; al iniciar sesión
-se solicita la contraseña. Las cuentas anteriores sin contraseña deberán
-configurarla la primera vez que se usen.
+número y símbolo. Antes de registrarla, solicita confirmarla. Las contraseñas
+se almacenan como hashes; al iniciar sesión se solicita la contraseña. Las
+cuentas anteriores sin contraseña deberán configurarla la primera vez que se
+usen.
 
 - `python main.py`: abre un menú para elegir entre gestión y consultas.
 - `python app.py`: consultas de usuarios, proyectos, tableros y tarjetas.
