@@ -2,6 +2,7 @@ from datetime import date, datetime
 
 from peewee import (
     AutoField,
+    BooleanField,
     CharField,
     CompositeKey,
     DateField,
@@ -36,6 +37,7 @@ class Usuario(BaseModel):
     nombre = CharField(max_length=100)
     email = CharField(max_length=150, unique=True)
     password_hash = CharField(max_length=255, null=True)
+    es_admin = BooleanField(default=False)
 
     class Meta:
         table_name = "usuario"
@@ -165,6 +167,15 @@ def _asegurar_columna_password_hash():
         )
 
 
+def _asegurar_columna_es_admin():
+    """Agrega el rol administrativo a tablas de usuario preexistentes."""
+    columnas = database.get_columns(Usuario._meta.table_name)
+    if not any(columna.name == "es_admin" for columna in columnas):
+        database.execute_sql(
+            "ALTER TABLE usuario ADD COLUMN es_admin TINYINT(1) NOT NULL DEFAULT 0"
+        )
+
+
 def crear_tablas():
     try:
         with database:
@@ -184,6 +195,7 @@ def crear_tablas():
                 ]
             )
             _asegurar_columna_password_hash()
+            _asegurar_columna_es_admin()
         return True
     except (PeeweeException, OSError) as error:
         print(

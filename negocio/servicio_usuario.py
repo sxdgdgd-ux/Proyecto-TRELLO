@@ -1,10 +1,13 @@
 """Operaciones de negocio para la gestión de usuarios."""
 
-import hashlib
-import hmac
 import re
-import secrets
 
+from decouple import config
+from auxiliares.seguridad import (
+    hashear_contrasena,
+    verificar_contrasena,
+    verificar_hash_anterior,
+)
 from Datos.repositorio import repo_usuario
 
 PATRON_EMAIL = re.compile(
@@ -14,11 +17,11 @@ PATRON_CONTRASENA = re.compile(
     r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9\s])\S{8,128}$"
 )
 MAX_LONGITUD_NOMBRE = 100
-ITERACIONES_HASH = 600_000
 
 
-def procesar_listado_usuario():
+def procesar_listado_usuario(id_actor: int):
     """Obtiene una lectura actualizada de los usuarios registrados."""
+    exigir_administrador(id_actor)
     return repo_usuario.listado_usuarios()
 
 
@@ -41,32 +44,7 @@ def validar_contrasena(contrasena: str) -> str:
 
 
 def _crear_hash_contrasena(contrasena: str) -> str:
-    sal = secrets.token_bytes(16)
-    hash_contrasena = hashlib.pbkdf2_hmac(
-        "sha256", contrasena.encode("utf-8"), sal, ITERACIONES_HASH
-    )
-    return (
-        f"pbkdf2_sha256${ITERACIONES_HASH}${sal.hex()}$"
-        f"{hash_contrasena.hex()}"
-    )
-
-
-def _verificar_hash_contrasena(contrasena: str, hash_guardado: str) -> bool:
-    try:
-        algoritmo, iteraciones, sal_hex, hash_hex = hash_guardado.split("$")
-        if algoritmo != "pbkdf2_sha256" or int(iteraciones) != ITERACIONES_HASH:
-            return False
-        sal = bytes.fromhex(sal_hex)
-        hash_esperado = bytes.fromhex(hash_hex)
-    except (AttributeError, ValueError):
-        return False
-    if len(sal) != 16 or len(hash_esperado) != 32:
-        return False
-
-    hash_calculado = hashlib.pbkdf2_hmac(
-        "sha256", contrasena.encode("utf-8"), sal, ITERACIONES_HASH
-    )
-    return hmac.compare_digest(hash_calculado, hash_esperado)
+    return hashear_contrasena(contrasena)
 
 
 def crear_usuario(nombre: str, email: str, contrasena: str):
@@ -90,31 +68,31 @@ def crear_usuario(nombre: str, email: str, contrasena: str):
 
 
 def autenticar_usuario(id_usuario: int, contrasena: str) -> bool:
-    """Comprueba la contraseña de un usuario existente."""
+    """Comprueba la contraseña y migra hashes PBKDF2 válidos a bcrypt."""
     usuario = repo_usuario.obtener_usuario_por_id(id_usuario)
-    return bool(
-        usuario
-        and usuario.password_hash
-        and isinstance(contrasena, str)
-        and _verificar_hash_contrasena(contrasena, usuario.password_hash)
-    )
+    if not usuario or not usuario.password_hash or not isinstance(contrasena, str):
+        return False
 
-
-def establecer_contrasena(id_usuario: int, contrasena: str):
-    """Guarda de forma segura una contraseña nueva para un usuario."""
-    validar_contrasena(contrasena)
-    return repo_usuario.actualizar_usuario(
-        id_usuario, password_hash=_crear_hash_contrasena(contrasena)
-    )
+    hash_guardado = usuario.password_hash
+    if hash_guardado.startswith("pbkdf2_sha256$"):
+        if not verificar_hash_anterior(contrasena, hash_guardado):
+            return False
+        repo_usuario.actualizar_usuario(
+            usuario.id_usuario, password_hash=_crear_hash_contrasena(contrasena)
+        )
+        return True
+    return verificar_contrasena(contrasena, hash_guardado)
 
 
 def actualizar_usuario(
     id_usuario: int,
+    id_actor: int,
     nombre: str = None,
     email: str = None,
     contrasena: str = None,
 ):
-    """Valida y actualiza los datos indicados de un usuario."""
+    """Permite a un administrador actualizar los datos de una cuenta."""
+    exigir_administrador(id_actor)
     cambios = {}
     if nombre is not None:
         nombre = nombre.strip() if isinstance(nombre, str) else ""
@@ -131,3 +109,63 @@ def actualizar_usuario(
         validar_contrasena(contrasena)
         cambios["password_hash"] = _crear_hash_contrasena(contrasena)
     return repo_usuario.actualizar_usuario(id_usuario, **cambios)
+
+
+def es_administrador(id_usuario: int) -> bool:
+    """Indica si la cuenta existe y tiene el rol administrativo global."""
+    usuario = repo_usuario.obtener_usuario_por_id(id_usuario)
+    return bool(usuario and usuario.es_admin)
+
+
+def exigir_administrador(id_usuario: int):
+    """Impide que cuentas comunes administren otras cuentas."""
+    if not es_administrador(id_usuario):
+        raise PermissionError("Solo un administrador puede gestionar usuarios.")
+
+
+def eliminar_usuario(id_usuario: int, id_actor: int) -> bool:
+    """Elimina una cuenta sin permitir quitar al último administrador."""
+    exigir_administrador(id_actor)
+    usuario = repo_usuario.obtener_usuario_por_id(id_usuario)
+    if not usuario:
+        return False
+    if usuario.es_admin:
+        administradores = sum(
+            cuenta.es_admin for cuenta in repo_usuario.listado_usuarios()
+        )
+        if administradores <= 1:
+            raise ValueError("No se puede eliminar al último administrador.")
+    return repo_usuario.eliminar_usuario(id_usuario)
+
+
+def bootstrap_administrador(nombre: str, email: str, contrasena: str):
+    """Crea o habilita el administrador indicado explícitamente en .env."""
+    email = validar_email(email)
+    email_configurado = config("admin_email", default="").strip().lower()
+    if not email_configurado or email != email_configurado:
+        raise ValueError(
+            "El correo debe coincidir con la variable admin_email configurada localmente."
+        )
+    nombre = nombre.strip() if isinstance(nombre, str) else ""
+    if not nombre:
+        raise ValueError("El nombre es obligatorio.")
+    if len(nombre) > MAX_LONGITUD_NOMBRE:
+        raise ValueError(
+            f"El nombre no puede superar {MAX_LONGITUD_NOMBRE} caracteres."
+        )
+    validar_contrasena(contrasena)
+    if any(cuenta.es_admin for cuenta in repo_usuario.listado_usuarios()):
+        raise ValueError(
+            "Ya existe un administrador. El alta inicial solo se permite una vez."
+        )
+
+    usuario = repo_usuario.obtener_usuario_por_email(email)
+    hash_nuevo = _crear_hash_contrasena(contrasena)
+    if usuario:
+        return repo_usuario.actualizar_usuario(
+            usuario.id_usuario,
+            nombre=nombre,
+            password_hash=hash_nuevo,
+            es_admin=True,
+        )
+    return repo_usuario.crear_usuario(nombre, email, hash_nuevo, es_admin=True)

@@ -105,48 +105,32 @@ def ejecutar_accion(accion, *args, **kwargs):
 
 def _usuario_actual():
     while True:
-        usuarios = list(repo_usuario.listado_usuarios())
-        if usuarios:
-            mostrar_tabla(
-                "USUARIOS DISPONIBLES",
-                ["ID", "Nombre", "Email"],
-                [
-                    [usuario.id_usuario, usuario.nombre, usuario.email]
-                    for usuario in usuarios
-                ],
-                "No hay usuarios registrados.",
-            )
-            print("0. Registrar un usuario nuevo")
-            seleccion = pedir("Selecciona el usuario de esta sesión: ")
-            if seleccion.isdigit() and int(seleccion) > 0:
-                usuario = repo_usuario.obtener_usuario_por_id(int(seleccion))
-                if usuario:
-                    try:
-                        if usuario.password_hash is None:
-                            contrasena = pedir_contrasena_nueva()
-                            servicio_usuario.establecer_contrasena(
-                                usuario.id_usuario, contrasena
-                            )
-                            print("Contraseña configurada para esta cuenta.")
-                            return usuario
-                        contrasena = pedir_contrasena("Contraseña: ")
-                        if servicio_usuario.autenticar_usuario(
-                            usuario.id_usuario, contrasena
-                        ):
-                            return usuario
-                        print("Contraseña incorrecta.")
-                    except ValueError as error:
-                        print(f"No se pudo validar la contraseña: {error}")
-                    except PeeweeException as error:
-                        print(f"No se pudo autenticar al usuario: {error}")
-                    continue
-                print("No existe ese usuario.")
-                continue
-            if seleccion != "0":
-                print("Selecciona un ID válido o 0 para registrar un usuario.")
-                continue
-        nombre = pedir("Nombre: ")
         email = pedir_email_valido()
+        usuario = repo_usuario.obtener_usuario_por_email(email)
+        if usuario:
+            if usuario.password_hash is None:
+                print(
+                    "Esta cuenta no tiene contraseña y no puede iniciar sesión. "
+                    "Solicita al administrador que la restablezca."
+                )
+                continue
+            contrasena = pedir_contrasena("Contraseña: ")
+            try:
+                if servicio_usuario.autenticar_usuario(
+                    usuario.id_usuario, contrasena
+                ):
+                    return usuario
+                print("Correo o contraseña incorrectos.")
+            except PeeweeException as error:
+                print(f"No se pudo autenticar al usuario: {error}")
+            continue
+
+        registrar = pedir(
+            "No existe una cuenta con ese correo. ¿Deseas registrarla? (s/N): "
+        )
+        if registrar.lower() != "s":
+            continue
+        nombre = pedir("Nombre: ")
         contrasena = pedir_contrasena_nueva()
         try:
             usuario = servicio_usuario.crear_usuario(nombre, email, contrasena)
@@ -160,8 +144,8 @@ def _usuario_actual():
         return usuario
 
 
-def listar_usuarios():
-    usuarios = servicio_usuario.procesar_listado_usuario()
+def listar_usuarios(usuario_actual):
+    usuarios = servicio_usuario.procesar_listado_usuario(usuario_actual.id_usuario)
     mostrar_tabla(
         "USUARIOS",
         ["ID", "Nombre", "Email"],
@@ -173,7 +157,8 @@ def listar_usuarios():
     )
 
 
-def menu_usuarios():
+def menu_usuarios(usuario_actual):
+    servicio_usuario.exigir_administrador(usuario_actual.id_usuario)
     while True:
         print("\n--- GESTIÓN DE USUARIOS ---")
         print("1. Listar | 2. Crear | 3. Actualizar | 4. Eliminar | 0. Volver")
@@ -181,7 +166,7 @@ def menu_usuarios():
         if opcion == "0":
             return
         if opcion == "1":
-            ejecutar_accion(listar_usuarios)
+            ejecutar_accion(listar_usuarios, usuario_actual)
         elif opcion == "2":
             nombre = pedir("Nombre: ")
             email = pedir_email_valido()
@@ -201,6 +186,7 @@ def menu_usuarios():
             usuario = ejecutar_accion(
                 servicio_usuario.actualizar_usuario,
                 usuario_id,
+                usuario_actual.id_usuario,
                 nombre,
                 email,
                 contrasena,
@@ -209,7 +195,11 @@ def menu_usuarios():
         elif opcion == "4":
             usuario_id = pedir_entero("ID del usuario a eliminar: ")
             if pedir("La eliminación borra sus asignaciones. ¿Confirmar? (s/N): ").lower() == "s":
-                eliminado = ejecutar_accion(repo_usuario.eliminar_usuario, usuario_id)
+                eliminado = ejecutar_accion(
+                    servicio_usuario.eliminar_usuario,
+                    usuario_id,
+                    usuario_actual.id_usuario,
+                )
                 print("Usuario eliminado." if eliminado else "Usuario no encontrado.")
         else:
             print("Opción no válida.")
@@ -811,7 +801,9 @@ def cargar_menu():
         while True:
             print(f"\n{nombre_app} v{version_app} — sesión: {usuario_actual.nombre}")
             print("1. Crear proyecto | 2. Listar proyectos | 3. Tableros")
-            print("4. Cambiar usuario | 5. Gestionar usuarios")
+            print("4. Cambiar usuario")
+            if usuario_actual.es_admin:
+                print("5. Gestionar usuarios")
             print("6. Gestionar proyectos | 0. Salir")
             opcion = pedir("Opción: ")
             if opcion == "0":
@@ -825,8 +817,8 @@ def cargar_menu():
                 menu_tableros(usuario_actual)
             elif opcion == "4":
                 usuario_actual = _usuario_actual()
-            elif opcion == "5":
-                menu_usuarios()
+            elif opcion == "5" and usuario_actual.es_admin:
+                ejecutar_accion(menu_usuarios, usuario_actual)
             elif opcion == "6":
                 menu_proyectos(usuario_actual)
             else:
@@ -835,6 +827,27 @@ def cargar_menu():
         print("\nSesión finalizada.")
     except PeeweeException as error:
         print(f"Error de base de datos: {error}")
+
+
+def configurar_administrador_inicial():
+    """Permite al operador local crear o habilitar el admin configurado."""
+    if not conectar_bd() or not modelos.crear_tablas():
+        return
+    try:
+        print("Configuración administrativa local (requiere admin_email en .env).")
+        nombre = pedir("Nombre del administrador: ")
+        email = pedir_email_valido()
+        contrasena = pedir_contrasena_nueva()
+        usuario = servicio_usuario.bootstrap_administrador(
+            nombre, email, contrasena
+        )
+        print(f"Administrador inicial configurado (ID {usuario.id_usuario}).")
+    except (ValueError, PermissionError) as error:
+        print(f"No se pudo configurar el administrador: {error}")
+    except PeeweeException as error:
+        print(f"No se pudo configurar el administrador: {error}")
+    except SalirMenu:
+        print("\nConfiguración cancelada.")
 
 
 if __name__ == "__main__":
