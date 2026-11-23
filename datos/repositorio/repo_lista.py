@@ -1,10 +1,18 @@
 """Módulo de repositorio para la gestión de Listas."""
-from Datos.modelos.models import Lista
+from datos.modelos.models import Lista
+
+
+def guardar(lista):
+    """Persiste una lista y devuelve la instancia guardada."""
+    lista.save()
+    return lista
 
 
 def crear_lista(id_tablero, nombre_lista, posicion):
     """Crea una nueva lista dentro de un tablero."""
-    return Lista.create(id_tablero=id_tablero, nombre_lista=nombre_lista, posicion=posicion)
+    return guardar(
+        Lista(id_tablero=id_tablero, nombre_lista=nombre_lista, posicion=posicion)
+    )
 
 
 def listado_listas_por_tablero(id_tablero):

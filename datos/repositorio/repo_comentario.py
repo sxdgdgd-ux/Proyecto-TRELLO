@@ -1,10 +1,18 @@
 """Módulo de repositorio para la gestión de Comentarios."""
-from Datos.modelos.models import Comentario
+from datos.modelos.models import Comentario
+
+
+def guardar(comentario):
+    """Persiste un comentario y devuelve la instancia guardada."""
+    comentario.save()
+    return comentario
 
 
 def crear_comentario(id_tarjeta, id_usuario, texto):
     """Registra un nuevo comentario en una tarjeta."""
-    return Comentario.create(id_tarjeta=id_tarjeta, id_usuario=id_usuario, texto=texto)
+    return guardar(
+        Comentario(id_tarjeta=id_tarjeta, id_usuario=id_usuario, texto=texto)
+    )
 
 
 def listado_comentarios_por_tarjeta(id_tarjeta):

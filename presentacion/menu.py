@@ -1,12 +1,12 @@
 """Menú de consola para operar proyectos, tableros, listas y tarjetas."""
-from getpass import getpass
+import maskpass
 
 from peewee import PeeweeException
 
 from presentacion.auxiliares import mostrar_tabla, nombre_app, version_app
-from Datos.conexion import conectar_bd
-from Datos.modelos import models as modelos
-from Datos.modelos.models import (
+from datos.conexion import conectar_bd
+from datos.modelos import models as modelos
+from datos.modelos.models import (
     Comentario,
     Etiqueta,
     Lista,
@@ -17,7 +17,7 @@ from Datos.modelos.models import (
     TarjetaEtiqueta,
     Usuario,
 )
-from Datos.repositorio import (
+from datos.repositorio import (
     repo_comentario,
     repo_etiqueta,
     repo_lista,
@@ -28,6 +28,7 @@ from Datos.repositorio import (
 )
 from negocio import servicio_usuario
 from negocio import servicio_trello as servicio
+from presentacion.consultas import ejecutar as ejecutar_consultas
 
 
 class SalirMenu(Exception):
@@ -43,7 +44,7 @@ def pedir(mensaje):
 
 def pedir_contrasena(mensaje):
     try:
-        return getpass(mensaje)
+        return maskpass.askpass(prompt=mensaje, mask="*")
     except (EOFError, KeyboardInterrupt) as error:
         raise SalirMenu from error
 
@@ -804,7 +805,8 @@ def cargar_menu():
             print("4. Cambiar usuario")
             if usuario_actual.es_admin:
                 print("5. Gestionar usuarios")
-            print("6. Gestionar proyectos | 0. Salir")
+            print("6. Gestionar proyectos | 7. Consultas")
+            print("0. Salir")
             opcion = pedir("Opción: ")
             if opcion == "0":
                 print("Hasta luego.")
@@ -821,6 +823,8 @@ def cargar_menu():
                 ejecutar_accion(menu_usuarios, usuario_actual)
             elif opcion == "6":
                 menu_proyectos(usuario_actual)
+            elif opcion == "7":
+                ejecutar_consultas()
             else:
                 print("Opción no válida.")
     except SalirMenu:

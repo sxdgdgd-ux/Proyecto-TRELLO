@@ -8,7 +8,7 @@ from auxiliares.seguridad import (
     verificar_contrasena,
     verificar_hash_anterior,
 )
-from Datos.repositorio import repo_usuario
+from datos.repositorio import repo_usuario
 
 PATRON_EMAIL = re.compile(
     r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"

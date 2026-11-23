@@ -1,12 +1,18 @@
 """Módulo de repositorio para la gestión de Tableros."""
-from Datos.modelos.models import Tablero, TableroUsuario
+from datos.modelos.models import Tablero, TableroUsuario
 
 ROLES = ("Administrador", "Lider", "Miembro", "Observador")
 
 
+def guardar(tablero):
+    """Persiste un tablero y devuelve la instancia guardada."""
+    tablero.save()
+    return tablero
+
+
 def crear_tablero(id_proyecto, titulo):
     """Crea un nuevo tablero dentro de un proyecto."""
-    return Tablero.create(id_proyecto=id_proyecto, titulo=titulo)
+    return guardar(Tablero(id_proyecto=id_proyecto, titulo=titulo))
 
 
 def listado_tableros_por_proyecto(id_proyecto):

@@ -1,5 +1,5 @@
 """Menú interactivo para consultar los datos del tablero."""
-from Datos.modelos.models import (
+from datos.modelos.models import (
     AsignacionTarjeta,
     Comentario,
     Etiqueta,
@@ -11,9 +11,9 @@ from Datos.modelos.models import (
     TarjetaEtiqueta,
     Usuario,
 )
-from Datos.conexion import conectar_bd
-from Datos.modelos import models as modelos
-from Datos.repositorio import repo_usuario
+from datos.conexion import conectar_bd
+from datos.modelos import models as modelos
+from datos.repositorio import repo_usuario
 from presentacion.auxiliares import mostrar_tabla as _mostrar_tabla
 
 
@@ -302,5 +302,7 @@ def ejecutar():
             print("\n❌ Opción no válida. Intenta de nuevo.")
 
 
-if __name__ == '__main__':
-    ejecutar()
+if __name__ == "__main__":
+    from main import main
+
+    main()

@@ -1,10 +1,16 @@
 """Módulo de repositorio para la gestión de Etiquetas."""
-from Datos.modelos.models import Etiqueta, TarjetaEtiqueta
+from datos.modelos.models import Etiqueta, TarjetaEtiqueta
+
+
+def guardar(etiqueta):
+    """Persiste una etiqueta y devuelve la instancia guardada."""
+    etiqueta.save()
+    return etiqueta
 
 
 def crear_etiqueta(nombre, color):
     """Crea una etiqueta nueva."""
-    return Etiqueta.create(nombre=nombre, color=color)
+    return guardar(Etiqueta(nombre=nombre, color=color))
 
 
 def listado_etiquetas():

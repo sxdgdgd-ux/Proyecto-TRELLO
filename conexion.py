@@ -1,5 +1,6 @@
 """Compatibilidad con las importaciones antiguas de la conexión."""
-from Datos.conexion import cerrar_bd, conectar_bd, database
-from Datos.modelos.models import BaseModel
+from datos.conexion import cerrar_bd, conectar_bd, database
+from datos.model_base import ModelBase
+from datos.modelos.models import BaseModel
 
-__all__ = ["BaseModel", "cerrar_bd", "conectar_bd", "database"]
+__all__ = ["BaseModel", "ModelBase", "cerrar_bd", "conectar_bd", "database"]

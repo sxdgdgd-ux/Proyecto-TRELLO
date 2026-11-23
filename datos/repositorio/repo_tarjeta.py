@@ -1,5 +1,5 @@
 """Módulo de repositorio para la gestión de Etiquetas."""
-from Datos.modelos.models import (
+from datos.modelos.models import (
     AsignacionTarjeta,
     Etiqueta,
     Tarjeta,
@@ -9,14 +9,22 @@ from Datos.modelos.models import (
 SIN_CAMBIO = object()
 
 
+def guardar(tarjeta):
+    """Persiste una tarjeta y devuelve la instancia guardada."""
+    tarjeta.save()
+    return tarjeta
+
+
 def crear_tarjeta(id_lista, titulo, descripcion=None, fecha_limite=None, estado=None):
     """Crea una tarjeta dentro de una lista."""
-    return Tarjeta.create(
-        id_lista=id_lista,
-        titulo=titulo,
-        descripcion=descripcion,
-        fecha_limite=fecha_limite,
-        estado=estado,
+    return guardar(
+        Tarjeta(
+            id_lista=id_lista,
+            titulo=titulo,
+            descripcion=descripcion,
+            fecha_limite=fecha_limite,
+            estado=estado or "Pendiente",
+        )
     )
 
 

@@ -1,15 +1,22 @@
 """Módulo de repositorio para la gestión de Usuarios."""
-from Datos.modelos.models import Usuario
+from datos.modelos.models import Usuario
+
+
+def guardar(usuario):
+    """Persiste un usuario y devuelve la instancia guardada."""
+    usuario.save()
+    return usuario
 
 
 def crear_usuario(nombre, email, password_hash, es_admin=False):
     """Crea un usuario nuevo."""
-    return Usuario.create(
+    usuario = Usuario(
         nombre=nombre,
         email=email,
         password_hash=password_hash,
         es_admin=es_admin,
     )
+    return guardar(usuario)
 
 
 def listado_usuarios():

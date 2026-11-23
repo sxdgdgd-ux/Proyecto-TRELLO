@@ -1,13 +1,19 @@
 """Módulo de repositorio para la gestión de Proyectos."""
-from Datos.modelos.models import Proyecto, ProyectoUsuario
+from datos.modelos.models import Proyecto, ProyectoUsuario
 
 ROLES = ("Administrador", "Lider", "Miembro", "Observador")
 SIN_CAMBIO = object()
 
 
+def guardar(proyecto):
+    """Persiste un proyecto y devuelve la instancia guardada."""
+    proyecto.save()
+    return proyecto
+
+
 def crear_proyecto(nombre_proyecto, descripcion=None):
     """Crea un nuevo proyecto."""
-    return Proyecto.create(nombre_proyecto=nombre_proyecto, descripcion=descripcion)
+    return guardar(Proyecto(nombre_proyecto=nombre_proyecto, descripcion=descripcion))
 
 
 def listado_proyectos():

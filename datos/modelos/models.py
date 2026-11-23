@@ -9,20 +9,18 @@ from peewee import (
     DateTimeField,
     ForeignKeyField,
     IntegerField,
-    Model,
     TextField,
 )
 from peewee import PeeweeException
 
-from Datos.conexion import database
+from datos.conexion import database
+from datos.model_base import ModelBase
 
 
-class BaseModel(Model):
-    class Meta:
-        database = database
+BaseModel = ModelBase
 
 
-class Proyecto(BaseModel):
+class Proyecto(ModelBase):
     id_proyecto = AutoField()
     nombre_proyecto = CharField(max_length=100)
     descripcion = TextField(null=True)
@@ -32,7 +30,7 @@ class Proyecto(BaseModel):
         table_name = "proyecto"
 
 
-class Usuario(BaseModel):
+class Usuario(ModelBase):
     id_usuario = AutoField()
     nombre = CharField(max_length=100)
     email = CharField(max_length=150, unique=True)
@@ -43,7 +41,7 @@ class Usuario(BaseModel):
         table_name = "usuario"
 
 
-class Etiqueta(BaseModel):
+class Etiqueta(ModelBase):
     id_etiqueta = AutoField()
     nombre = CharField(max_length=50)
     color = CharField(max_length=20, default="#808080")
@@ -52,7 +50,7 @@ class Etiqueta(BaseModel):
         table_name = "etiqueta"
 
 
-class ProyectoUsuario(BaseModel):
+class ProyectoUsuario(ModelBase):
     id_proyecto = ForeignKeyField(
         Proyecto, column_name="id_proyecto", on_delete="CASCADE"
     )
@@ -66,7 +64,7 @@ class ProyectoUsuario(BaseModel):
         primary_key = CompositeKey("id_proyecto", "id_usuario")
 
 
-class Tablero(BaseModel):
+class Tablero(ModelBase):
     id_tablero = AutoField()
     id_proyecto = ForeignKeyField(
         Proyecto, column_name="id_proyecto", on_delete="CASCADE"
@@ -77,7 +75,7 @@ class Tablero(BaseModel):
         table_name = "tablero"
 
 
-class TableroUsuario(BaseModel):
+class TableroUsuario(ModelBase):
     id_tablero = ForeignKeyField(
         Tablero, column_name="id_tablero", on_delete="CASCADE"
     )
@@ -91,7 +89,7 @@ class TableroUsuario(BaseModel):
         primary_key = CompositeKey("id_tablero", "id_usuario")
 
 
-class Lista(BaseModel):
+class Lista(ModelBase):
     id_lista = AutoField()
     id_tablero = ForeignKeyField(
         Tablero, column_name="id_tablero", on_delete="CASCADE"
@@ -103,7 +101,7 @@ class Lista(BaseModel):
         table_name = "lista"
 
 
-class Tarjeta(BaseModel):
+class Tarjeta(ModelBase):
     id_tarjeta = AutoField()
     id_lista = ForeignKeyField(
         Lista, column_name="id_lista", on_delete="CASCADE"
@@ -117,7 +115,7 @@ class Tarjeta(BaseModel):
         table_name = "tarjeta"
 
 
-class AsignacionTarjeta(BaseModel):
+class AsignacionTarjeta(ModelBase):
     id_tarjeta = ForeignKeyField(
         Tarjeta, column_name="id_tarjeta", on_delete="CASCADE"
     )
@@ -130,7 +128,7 @@ class AsignacionTarjeta(BaseModel):
         primary_key = CompositeKey("id_tarjeta", "id_usuario")
 
 
-class Comentario(BaseModel):
+class Comentario(ModelBase):
     id_comentario = AutoField()
     id_tarjeta = ForeignKeyField(
         Tarjeta, column_name="id_tarjeta", on_delete="CASCADE"
@@ -145,7 +143,7 @@ class Comentario(BaseModel):
         table_name = "comentario"
 
 
-class TarjetaEtiqueta(BaseModel):
+class TarjetaEtiqueta(ModelBase):
     id_tarjeta = ForeignKeyField(
         Tarjeta, column_name="id_tarjeta", on_delete="CASCADE"
     )

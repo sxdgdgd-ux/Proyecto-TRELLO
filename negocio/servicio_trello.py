@@ -1,14 +1,14 @@
 """Validación de operaciones y permisos de negocio para proyectos/tableros."""
 from datetime import date
 
-from Datos.conexion import database
-from Datos.modelos.models import (
+from datos.conexion import database
+from datos.modelos.models import (
     Etiqueta,
     Lista,
     Tablero,
     Usuario,
 )
-from Datos.repositorio import (
+from datos.repositorio import (
     repo_comentario,
     repo_etiqueta,
     repo_lista,

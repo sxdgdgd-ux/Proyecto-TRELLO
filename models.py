@@ -1,5 +1,5 @@
 """Compatibilidad para importar los modelos desde el modulo principal."""
-from Datos.modelos.models import (
+from datos.modelos.models import (
     AsignacionTarjeta,
     BaseModel,
     Comentario,
@@ -15,6 +15,7 @@ from Datos.modelos.models import (
     crear_tablas,
     database,
 )
+from datos.model_base import ModelBase
 
 __all__ = [
     "AsignacionTarjeta",
@@ -22,6 +23,7 @@ __all__ = [
     "Comentario",
     "Etiqueta",
     "Lista",
+    "ModelBase",
     "Proyecto",
     "ProyectoUsuario",
     "Tablero",

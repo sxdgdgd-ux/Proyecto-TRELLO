@@ -3,3 +3,4 @@ peewee
 PyMySQL
 python-decouple
 bcrypt
+maskpass
