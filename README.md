@@ -5,7 +5,9 @@ tarjetas almacenados en MySQL.
 
 ## Integrantes
 
-Nombres del equipo: pendientes de completar.
+Alejandro Ortiz
+Diego Araya
+Fabian Rojas
 
 ## Descripción
 
@@ -64,10 +66,11 @@ la base y sus tablas ejecutando `datos/sql/trello_db.sql` (o usa otro script
 compatible de `datos/sql/`) y luego inicia:
 
 Al iniciar, la aplicación crea las tablas que falten y agrega automáticamente
-las columnas `password_hash` y `es_admin` a una tabla `usuario` existente. La
-cuenta de MySQL debe tener permisos para modificar el esquema; de lo contrario,
-aplica una sola vez `datos/sql/migracion_contrasena_usuario.sql` sobre una base
-que todavía no tenga esas columnas.
+las columnas `password_hash`, `es_admin` y `activo` a una tabla `usuario`
+existente. La cuenta de MySQL debe tener permisos para modificar el esquema; de
+lo contrario, aplica una sola vez
+`datos/sql/migracion_contrasena_usuario.sql` sobre una base que todavía no tenga
+esas columnas.
 
 El registro valida el formato del correo y exige una contraseña de 8 a 128
 caracteres con mayúscula, minúscula, número y símbolo. Antes de registrarla, la
@@ -85,7 +88,9 @@ solicita nombre y contraseña, crea esa cuenta o restablece la cuenta existente
 con ese correo y le asigna el rol administrativo. Solo funciona cuando aún no
 hay ningún administrador; los usuarios normales no pueden asignarse ese rol.
 Una vez inicializado, la gestión de cuentas está disponible solo para
-administradores y no se puede eliminar al último administrador. No compartas
+administradores. Las cuentas se pueden deshabilitar y reactivar sin borrar su
+historial; el login rechaza las cuentas deshabilitadas y no se puede
+deshabilitar al último administrador activo. No compartas
 el `.env` ni permitas que usuarios no confiables ejecuten el comando de
 bootstrap en el equipo del servidor.
 

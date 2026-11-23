@@ -8,13 +8,14 @@ def guardar(usuario):
     return usuario
 
 
-def crear_usuario(nombre, email, password_hash, es_admin=False):
+def crear_usuario(nombre, email, password_hash, es_admin=False, activo=True):
     """Crea un usuario nuevo."""
     usuario = Usuario(
         nombre=nombre,
         email=email,
         password_hash=password_hash,
         es_admin=es_admin,
+        activo=activo,
     )
     return guardar(usuario)
 
@@ -35,7 +36,12 @@ def obtener_usuario_por_email(email):
 
 
 def actualizar_usuario(
-    id_usuario, nombre=None, email=None, password_hash=None, es_admin=None
+    id_usuario,
+    nombre=None,
+    email=None,
+    password_hash=None,
+    es_admin=None,
+    activo=None,
 ):
     """Actualiza los datos de un usuario existente."""
     usuario = obtener_usuario_por_id(id_usuario)
@@ -48,9 +54,16 @@ def actualizar_usuario(
             usuario.password_hash = password_hash
         if es_admin is not None:
             usuario.es_admin = es_admin
+        if activo is not None:
+            usuario.activo = activo
         usuario.save()
         return usuario
     return None
+
+
+def cambiar_estado_usuario(id_usuario, activo):
+    """Habilita o deshabilita una cuenta sin eliminar sus datos relacionados."""
+    return actualizar_usuario(id_usuario, activo=activo)
 
 
 def eliminar_usuario(id_usuario):

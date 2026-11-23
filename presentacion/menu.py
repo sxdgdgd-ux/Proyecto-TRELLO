@@ -109,6 +109,9 @@ def _usuario_actual():
         email = pedir_email_valido()
         usuario = repo_usuario.obtener_usuario_por_email(email)
         if usuario:
+            if not usuario.activo:
+                print("Esta cuenta está deshabilitada. Contacta a un administrador.")
+                continue
             if usuario.password_hash is None:
                 print(
                     "Esta cuenta no tiene contraseña y no puede iniciar sesión. "
@@ -149,9 +152,14 @@ def listar_usuarios(usuario_actual):
     usuarios = servicio_usuario.procesar_listado_usuario(usuario_actual.id_usuario)
     mostrar_tabla(
         "USUARIOS",
-        ["ID", "Nombre", "Email"],
+        ["ID", "Nombre", "Email", "Estado"],
         [
-            [usuario.id_usuario, usuario.nombre, usuario.email]
+            [
+                usuario.id_usuario,
+                usuario.nombre,
+                usuario.email,
+                "Activo" if usuario.activo else "Deshabilitado",
+            ]
             for usuario in usuarios
         ],
         "No hay usuarios registrados.",
@@ -162,7 +170,10 @@ def menu_usuarios(usuario_actual):
     servicio_usuario.exigir_administrador(usuario_actual.id_usuario)
     while True:
         print("\n--- GESTIÓN DE USUARIOS ---")
-        print("1. Listar | 2. Crear | 3. Actualizar | 4. Eliminar | 0. Volver")
+        print(
+            "1. Listar | 2. Crear | 3. Actualizar | "
+            "4. Habilitar/deshabilitar | 0. Volver"
+        )
         opcion = pedir("Opción: ")
         if opcion == "0":
             return
@@ -194,14 +205,42 @@ def menu_usuarios(usuario_actual):
             )
             print("Usuario actualizado." if usuario else "Usuario no encontrado.")
         elif opcion == "4":
-            usuario_id = pedir_entero("ID del usuario a eliminar: ")
-            if pedir("La eliminación borra sus asignaciones. ¿Confirmar? (s/N): ").lower() == "s":
-                eliminado = ejecutar_accion(
-                    servicio_usuario.eliminar_usuario,
+            usuarios = ejecutar_accion(
+                servicio_usuario.procesar_listado_usuario, usuario_actual.id_usuario
+            )
+            if usuarios is None:
+                continue
+            mostrar_tabla(
+                "USUARIOS",
+                ["ID", "Nombre", "Email", "Estado"],
+                [
+                    [
+                        usuario.id_usuario,
+                        usuario.nombre,
+                        usuario.email,
+                        "Activo" if usuario.activo else "Deshabilitado",
+                    ]
+                    for usuario in usuarios
+                ],
+                "No hay usuarios registrados.",
+            )
+            usuario_id = pedir_entero("ID del usuario: ")
+            usuario_objetivo = repo_usuario.obtener_usuario_por_id(usuario_id)
+            if not usuario_objetivo:
+                print("Usuario no encontrado.")
+                continue
+            nuevo_estado = not usuario_objetivo.activo
+            accion = "habilitar" if nuevo_estado else "deshabilitar"
+            if pedir(f"¿Confirmas {accion} esta cuenta? (s/N): ").lower() == "s":
+                actualizado = ejecutar_accion(
+                    servicio_usuario.cambiar_estado_usuario,
                     usuario_id,
+                    nuevo_estado,
                     usuario_actual.id_usuario,
                 )
-                print("Usuario eliminado." if eliminado else "Usuario no encontrado.")
+                if actualizado:
+                    estado = "habilitado" if nuevo_estado else "deshabilitado"
+                    print(f"Usuario {estado} correctamente.")
         else:
             print("Opción no válida.")
 

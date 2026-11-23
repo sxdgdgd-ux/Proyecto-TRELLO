@@ -70,7 +70,12 @@ def crear_usuario(nombre: str, email: str, contrasena: str):
 def autenticar_usuario(id_usuario: int, contrasena: str) -> bool:
     """Comprueba la contraseña y migra hashes PBKDF2 válidos a bcrypt."""
     usuario = repo_usuario.obtener_usuario_por_id(id_usuario)
-    if not usuario or not usuario.password_hash or not isinstance(contrasena, str):
+    if (
+        not usuario
+        or not usuario.activo
+        or not usuario.password_hash
+        or not isinstance(contrasena, str)
+    ):
         return False
 
     hash_guardado = usuario.password_hash
@@ -108,13 +113,20 @@ def actualizar_usuario(
     if contrasena is not None:
         validar_contrasena(contrasena)
         cambios["password_hash"] = _crear_hash_contrasena(contrasena)
+    usuario = repo_usuario.obtener_usuario_por_id(id_usuario)
+    if not usuario:
+        return None
+    if "email" in cambios:
+        existente = repo_usuario.obtener_usuario_por_email(cambios["email"])
+        if existente and existente.id_usuario != usuario.id_usuario:
+            raise ValueError("Ya existe un usuario registrado con ese correo.")
     return repo_usuario.actualizar_usuario(id_usuario, **cambios)
 
 
 def es_administrador(id_usuario: int) -> bool:
-    """Indica si la cuenta existe y tiene el rol administrativo global."""
+    """Indica si la cuenta activa tiene el rol administrativo global."""
     usuario = repo_usuario.obtener_usuario_por_id(id_usuario)
-    return bool(usuario and usuario.es_admin)
+    return bool(usuario and usuario.activo and usuario.es_admin)
 
 
 def exigir_administrador(id_usuario: int):
@@ -129,13 +141,34 @@ def eliminar_usuario(id_usuario: int, id_actor: int) -> bool:
     usuario = repo_usuario.obtener_usuario_por_id(id_usuario)
     if not usuario:
         return False
-    if usuario.es_admin:
+    if usuario.es_admin and usuario.activo:
         administradores = sum(
-            cuenta.es_admin for cuenta in repo_usuario.listado_usuarios()
+            cuenta.es_admin and cuenta.activo
+            for cuenta in repo_usuario.listado_usuarios()
         )
         if administradores <= 1:
-            raise ValueError("No se puede eliminar al último administrador.")
+            raise ValueError("No se puede eliminar al último administrador activo.")
     return repo_usuario.eliminar_usuario(id_usuario)
+
+
+def cambiar_estado_usuario(id_usuario: int, activo: bool, id_actor: int):
+    """Habilita o deshabilita una cuenta preservando sus datos e historial."""
+    exigir_administrador(id_actor)
+    usuario = repo_usuario.obtener_usuario_por_id(id_usuario)
+    if not usuario:
+        return None
+    if usuario.id_usuario == id_actor and not activo:
+        raise ValueError("No puedes deshabilitar tu propia cuenta.")
+    if usuario.activo == activo:
+        return usuario
+    if usuario.es_admin and not activo:
+        administradores_activos = sum(
+            cuenta.es_admin and cuenta.activo
+            for cuenta in repo_usuario.listado_usuarios()
+        )
+        if administradores_activos <= 1:
+            raise ValueError("No se puede deshabilitar al último administrador activo.")
+    return repo_usuario.cambiar_estado_usuario(usuario.id_usuario, activo)
 
 
 def bootstrap_administrador(nombre: str, email: str, contrasena: str):
@@ -154,7 +187,10 @@ def bootstrap_administrador(nombre: str, email: str, contrasena: str):
             f"El nombre no puede superar {MAX_LONGITUD_NOMBRE} caracteres."
         )
     validar_contrasena(contrasena)
-    if any(cuenta.es_admin for cuenta in repo_usuario.listado_usuarios()):
+    if any(
+        cuenta.es_admin and cuenta.activo
+        for cuenta in repo_usuario.listado_usuarios()
+    ):
         raise ValueError(
             "Ya existe un administrador. El alta inicial solo se permite una vez."
         )
@@ -167,5 +203,6 @@ def bootstrap_administrador(nombre: str, email: str, contrasena: str):
             nombre=nombre,
             password_hash=hash_nuevo,
             es_admin=True,
+            activo=True,
         )
     return repo_usuario.crear_usuario(nombre, email, hash_nuevo, es_admin=True)

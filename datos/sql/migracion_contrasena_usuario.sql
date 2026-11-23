@@ -21,6 +21,22 @@ SET @columna_existe = (
     FROM information_schema.COLUMNS
     WHERE TABLE_SCHEMA = DATABASE()
       AND TABLE_NAME = 'usuario'
+      AND COLUMN_NAME = 'activo'
+);
+SET @sql = IF(
+    @columna_existe = 0,
+    'ALTER TABLE usuario ADD COLUMN activo TINYINT(1) NOT NULL DEFAULT 1',
+    'SELECT 1'
+);
+PREPARE migracion FROM @sql;
+EXECUTE migracion;
+DEALLOCATE PREPARE migracion;
+
+SET @columna_existe = (
+    SELECT COUNT(*)
+    FROM information_schema.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'usuario'
       AND COLUMN_NAME = 'es_admin'
 );
 SET @sql = IF(
