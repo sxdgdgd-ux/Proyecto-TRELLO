@@ -1,9 +1,10 @@
 """Datos de presentación de la aplicación."""
 
 from prettytable import PrettyTable
+from auxiliares.configuracion import NOMBRE_APP, VERSION_APP
 
-nombre_app = "Gestor de Proyectos Trello"
-version_app = "1.0"
+nombre_app = NOMBRE_APP
+version_app = VERSION_APP
 
 
 def mostrar_tabla(titulo, encabezados, filas, mensaje_vacio):

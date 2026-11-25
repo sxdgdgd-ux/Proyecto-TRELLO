@@ -1,12 +1,18 @@
 """Configuración y ciclo de vida de la conexión a la base de datos."""
 from decouple import config
 from peewee import MySQLDatabase, PeeweeException
+from auxiliares.configuracion import (
+    DB_HOST_DEFAULT,
+    DB_NAME_DEFAULT,
+    DB_PORT_DEFAULT,
+)
+from auxiliares.mensajes import DB_NO_DISPONIBLE
 
 database = MySQLDatabase(
-    config("db", default="trello_db"),
+    config("db", default=DB_NAME_DEFAULT),
     charset="utf8mb4",
-    host=config("host", default="localhost"),
-    port=config("port", default=3306, cast=int),
+    host=config("host", default=DB_HOST_DEFAULT),
+    port=config("port", default=DB_PORT_DEFAULT, cast=int),
     user=config("user", default="root"),
     password=config("password", default=""),
 )
@@ -19,10 +25,7 @@ def conectar_bd():
             database.connect()
         return True
     except (PeeweeException, OSError) as error:
-        print(
-            "No se pudo conectar a MySQL. Verifica que XAMPP/MySQL esté "
-            f"encendido y que la configuración del .env sea correcta: {error}"
-        )
+        print(f"{DB_NO_DISPONIBLE} Detalle: {error}")
         return False
 
 

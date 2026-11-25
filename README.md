@@ -43,10 +43,9 @@ relacionados de forma estable por nombre o identificador.
   transitoria de hashes PBKDF2 antiguos. Maskpass oculta las contraseñas durante
   el ingreso.
 
-La lógica auxiliar que existe actualmente pertenece a la presentación
-(`presentacion/auxiliares.py`, con el nombre y la versión de la aplicación).
-Las validaciones de negocio permanecen en `negocio/`; todavía no hay funciones
-auxiliares compartidas propias de la capa de datos que justifiquen otro módulo.
+La configuración reutilizable está en `auxiliares/configuracion.py`; los
+mensajes comunes están en `auxiliares/mensajes.py`. Las validaciones de negocio
+permanecen en `negocio/` y los formatos de tabla pertenecen a la presentación.
 Los archivos `conexion.py` y `models.py` en la raíz se conservan como fachadas
 de compatibilidad; las implementaciones están dentro de `datos/`.
 
@@ -61,9 +60,25 @@ Instálalas desde la raíz del proyecto:
 
 Configura la conexión en un archivo `.env` local (no se incluye en Git) con las
 variables `db`, `host`, `port`, `user` y `password`. Para el primer
-administrador, también configura `admin_email` como una variable opcional. Crea
-la base y sus tablas ejecutando `datos/sql/trello_db.sql` (o usa otro script
-compatible de `datos/sql/`) y luego inicia:
+administrador, también configura `admin_email`.
+
+Puedes copiar `.env.example` y ajustar sus valores:
+
+```env
+db=trello_db
+host=localhost
+port=8080
+user=root
+password=
+admin_email=administrador@ejemplo.com
+```
+
+Mantén el valor de `port` igual al puerto real configurado en tu MySQL/XAMPP.
+Este proyecto usa `8080` en la configuración local actual cuando 3306 no está
+disponible; no requiere que el puerto coincida con el puerto HTTP de XAMPP.
+
+Crea la base y sus tablas ejecutando `datos/sql/trello_db.sql` desde MySQL/XAMPP
+o usando el script compatible disponible en `datos/sql/`.
 
 Al iniciar, la aplicación crea las tablas que falten y agrega automáticamente
 las columnas `password_hash`, `es_admin` y `activo` a una tabla `usuario`
@@ -99,3 +114,15 @@ bootstrap en el equipo del servidor.
 - `python app.py`: alias del inicio autenticado de `main.py`.
 - `python menu.py`: gestión interactiva de usuarios, proyectos, tableros,
   listas y tarjetas.
+
+## Usuario inicial
+
+Antes del primer uso define `admin_email` en `.env` y ejecuta:
+
+```powershell
+python main.py --bootstrap-admin
+```
+
+El programa solicitará el nombre del administrador, el correo configurado,
+una contraseña segura y su confirmación. No guardes el usuario ni la contraseña
+en el código fuente ni compartas el archivo `.env`.

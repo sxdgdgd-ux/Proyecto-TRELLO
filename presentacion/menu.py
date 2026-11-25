@@ -4,6 +4,12 @@ import maskpass
 from peewee import PeeweeException
 
 from presentacion.auxiliares import mostrar_tabla, nombre_app, version_app
+from auxiliares.mensajes import (
+    CONTRASENA_INCORRECTA,
+    OPCION_INVALIDA,
+    SESION_FINALIZADA,
+    USUARIO_DESHABILITADO,
+)
 from datos.conexion import conectar_bd
 from datos.modelos import models as modelos
 from datos.modelos.models import (
@@ -110,7 +116,7 @@ def _usuario_actual():
         usuario = repo_usuario.obtener_usuario_por_email(email)
         if usuario:
             if not usuario.activo:
-                print("Esta cuenta está deshabilitada. Contacta a un administrador.")
+                print(USUARIO_DESHABILITADO)
                 continue
             if usuario.password_hash is None:
                 print(
@@ -124,7 +130,7 @@ def _usuario_actual():
                     usuario.id_usuario, contrasena
                 ):
                     return usuario
-                print("Correo o contraseña incorrectos.")
+                print(CONTRASENA_INCORRECTA)
             except PeeweeException as error:
                 print(f"No se pudo autenticar al usuario: {error}")
             continue
@@ -848,7 +854,7 @@ def cargar_menu():
             print("0. Salir")
             opcion = pedir("Opción: ")
             if opcion == "0":
-                print("Hasta luego.")
+                print(SESION_FINALIZADA)
                 return
             if opcion == "1":
                 crear_proyecto_consola(usuario_actual)
@@ -865,7 +871,7 @@ def cargar_menu():
             elif opcion == "7":
                 ejecutar_consultas()
             else:
-                print("Opción no válida.")
+                print(OPCION_INVALIDA)
     except SalirMenu:
         print("\nSesión finalizada.")
     except PeeweeException as error:
